@@ -32,12 +32,6 @@ namespace VS2GiderosBridge
         /// 이 파일을 플레이어로 재생한다.
         /// </summary>
         public string GprojPath { get; set; }
-
-        /// <summary>
-        /// C# 프로젝트 파일 경로.
-        /// 기데로스 프로젝트 파일을 읽어서 이 파일 내용을 채운다.
-        /// </summary>
-        public string CSharpProjPath { get; set; }
         #endregion
 
         #region constructors
@@ -63,19 +57,6 @@ namespace VS2GiderosBridge
                 ErrorWriteLine("GprojPath 파일이 없습니다: {0}", GprojPath);
                 return;
             }
-            if (!System.IO.File.Exists(CSharpProjPath))
-            {
-                ErrorWriteLine("CSharpProjPath 파일이 없습니다: {0}", CSharpProjPath);
-                return;
-            }
-
-            /*
-            // csharp proj 업데이트
-            {
-                var gproj2csharpProj = new Gproj2CSharpProj(this);
-                gproj2csharpProj.Generate();
-            }
-            */
 
             // gdrbridge 기동
             GdrBridge gdrBridge = null;
