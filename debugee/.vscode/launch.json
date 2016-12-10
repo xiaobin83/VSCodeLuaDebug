@@ -1,0 +1,33 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "launch-lua",
+            "type": "lua",
+            "request": "launch",
+            "workingDirectory": "${workspaceRoot}",
+            "executable": "${workspaceRoot}/lua.exe",
+            "arguments": "main.lua",
+            "listenPublicly": false,
+            "listenPort": 56789
+        },
+        {
+            "name": "launch-gideros",
+            "type": "lua",
+            "request": "launch",
+            "workingDirectory": "${workspaceRoot}",
+            "executable": "C:\\Program Files (x86)\\Gideros\\GiderosPlayer.exe",
+            "arguments": "main.lua",
+            "listenPublicly": false,
+            "listenPort": 56789
+        },
+        {
+            "name": "wait",
+            "type": "lua",
+            "request": "attach",
+            "workingDirectory": "${workspaceRoot}",
+            "listenPublicly": false,
+            "listenPort": 56789           
+        }
+    ]
+}

@@ -1,0 +1,139 @@
+{
+    "name": "lua-debug",
+    "displayName": "Lua Debugger",
+    "version": "0.0.2",
+    "publisher": "devCAT",
+    "icon": "images/icon.png",
+    "description": "Visual Studio Code debugger extension for Lua 5.1",
+    "categories": [
+        "Debuggers"
+    ],
+    "author": {
+        "name": "lee-seungjae"
+    },
+    "license": "MIT",
+    "private": true,
+    "scripts": {},
+    "engines": {
+        "vscode": "^1.0.0"
+    },
+    "dependencies": {},
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/lee-seungjae/VSCodeLuaDebug.git"
+    },
+    "devDependencies": {},
+    "contributes": {
+        "debuggers": [
+            {
+                "type": "lua",
+                "label": "Lua Debugger",
+                "enableBreakpointsFor": {
+                    "languageIds": [
+                        "lua"
+                    ]
+                },
+                "program": "./DebugAdapter.exe",
+                "initialConfigurations": [
+                    {
+                        "name": "launch-lua",
+                        "type": "lua",
+                        "request": "launch",
+                        "workingDirectory": "${workspaceRoot}",
+                        "executable": "${workspaceRoot}/lua.exe",
+                        "arguments": "main.lua",
+                        "listenPublicly": false,
+                        "listenPort": 56789
+                    },
+                    {
+                        "name": "launch-gideros",
+                        "type": "lua",
+                        "request": "launch",
+                        "workingDirectory": "${workspaceRoot}",
+                        "executable": "C:\\Program Files (x86)\\Gideros\\GiderosPlayer.exe",
+                        "arguments": "main.lua",
+                        "listenPublicly": false,
+                        "listenPort": 56789
+                    },
+                    {
+                        "name": "wait",
+                        "type": "lua",
+                        "request": "attach",
+                        "workingDirectory": "${workspaceRoot}",
+                        "listenPublicly": false,
+                        "listenPort": 56789
+                    }
+                ],
+                "configurationAttributes": {
+                    "launch": {
+                        "required": [
+                            "name",
+                            "type",
+                            "request",
+                            "workingDirectory",
+                            "executable",
+                            "arguments",
+                            "listenPublicly",
+                            "listenPort"
+                        ],
+                        "properties": {
+                            "workingDirectory": {
+                                "type": "string",
+                                "description": "Working directory",
+                                "default": "${workspaceRoot}"
+                            },
+                            "executable": {
+                                "type": "string",
+                                "description": "An exe file to launch",
+                                "default": "${workspaceRoot}/lua.exe"
+                            },
+                            "arguments": {
+                                "type": "string",
+                                "description": "Command line arguments for executable",
+                                "default": "main.lua"
+                            },
+                            "listenPublicly": {
+                                "type": "boolean",
+                                "description": "Set this to false",
+                                "default": false
+                            },
+                            "listenPort": {
+                                "type": "integer",
+                                "description": "Local TCP port to communicate between debug adapter and debugee.",
+                                "default": 56789
+                            }
+                        }
+                    },
+                    "attach": {
+                        "required": [
+                            "name",
+                            "type",
+                            "request",
+                            "workingDirectory",
+                            "listenPublicly",
+                            "listenPort"
+                        ],
+                        "properties": {
+                            "workingDirectory": {
+                                "type": "string",
+                                "description": "Working directory",
+                                "default": "${workspaceRoot}"
+                            },
+                            "listenPublicly": {
+                                "type": "boolean",
+                                "description": "Set this to true if the debuggee will run in different computer.",
+                                "default": false
+                            },
+                            "listenPort": {
+                                "type": "integer",
+                                "description": "Local TCP port to communicate between debug adapter and debugee.",
+                                "default": 56789
+                            }
+                        }
+                    }
+                }
+            }
+        ]
+    },
+    "__metadata": {}
+}
