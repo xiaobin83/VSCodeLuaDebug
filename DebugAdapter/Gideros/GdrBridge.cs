@@ -38,25 +38,19 @@ namespace VS2GiderosBridge
             {
                 string output = string.Empty;
 
-                try
-                {
-                    var psi = new ProcessStartInfo();
-                    psi.FileName = ExecPath;
-                    psi.Arguments = string.Format("isconnected");
-                    psi.UseShellExecute = false;
-                    psi.RedirectStandardOutput = true;
-                    psi.CreateNoWindow = true;
-                    psi.StandardOutputEncoding = Encoding.UTF8;
-                    var p = Process.Start(psi);
+                var psi = new ProcessStartInfo();
+                psi.FileName = ExecPath;
+                psi.Arguments = string.Format("isconnected");
+                psi.UseShellExecute = false;
+                psi.RedirectStandardOutput = true;
+                psi.CreateNoWindow = true;
+                psi.StandardOutputEncoding = Encoding.UTF8;
+                var p = Process.Start(psi);
 
-                    var stream = p.StandardOutput;
-                    output = stream.ReadToEnd();
+                var stream = p.StandardOutput;
+                output = stream.ReadToEnd();
 
-                    p.WaitForExit();
-                }
-                catch
-                {
-                }
+                p.WaitForExit();
 
                 return !string.IsNullOrEmpty(output) && output != "0";
             }
@@ -87,17 +81,11 @@ namespace VS2GiderosBridge
             }
 
             string path = Path.Combine(ToolKit.GiderosPath, @"GiderosPlayer.exe");
-            try
-            {
-                ToolKit.LogWriteLine("\"{0}\" 실행...", path);
+            ToolKit.LogWriteLine("\"{0}\" 실행...", path);
 
-                var psi = new ProcessStartInfo();
-                psi.FileName = path;
-                player = Process.Start(psi);
-            }
-            catch
-            {
-            }
+            var psi = new ProcessStartInfo();
+            psi.FileName = path;
+            player = Process.Start(psi);
         }
 
         public void Play()
@@ -107,53 +95,35 @@ namespace VS2GiderosBridge
 
         public void Play(string gprojPath)
         {
-            try
-            {
-                ToolKit.LogWriteLine("\"{0}\" 실행...", gprojPath);
+            ToolKit.LogWriteLine("\"{0}\" 실행...", gprojPath);
 
-                var psi = new ProcessStartInfo();
-                psi.FileName = ExecPath;
-                psi.Arguments = string.Format("play \"{0}\"", gprojPath);
-                psi.WindowStyle = ProcessWindowStyle.Hidden;
-                Process.Start(psi).WaitForExit();
-            }
-            catch
-            {
-            }
-        }
+            var psi = new ProcessStartInfo();
+            psi.FileName = ExecPath;
+            psi.Arguments = string.Format("play \"{0}\"", gprojPath);
+            psi.WindowStyle = ProcessWindowStyle.Hidden;
+            Process.Start(psi).WaitForExit();
+        }  
 
         public void Stop()
         {
-            try
-            {
-                ToolKit.LogWriteLine("게임을 종료...");
+            ToolKit.LogWriteLine("게임을 종료...");
 
-                var psi = new ProcessStartInfo();
-                psi.FileName = ExecPath;
-                psi.Arguments = string.Format("stop");
-                psi.WindowStyle = ProcessWindowStyle.Hidden;
-                Process.Start(psi).WaitForExit();
-            }
-            catch
-            {
-            }
+            var psi = new ProcessStartInfo();
+            psi.FileName = ExecPath;
+            psi.Arguments = string.Format("stop");
+            psi.WindowStyle = ProcessWindowStyle.Hidden;
+            Process.Start(psi).WaitForExit();
         }
 
         public void StopDeamon()
         {
-            try
-            {
-                ToolKit.LogWriteLine("deamon을 종료...");
+            ToolKit.LogWriteLine("deamon을 종료...");
 
-                var psi = new ProcessStartInfo();
-                psi.FileName = ExecPath;
-                psi.Arguments = string.Format("stopdeamon");
-                psi.WindowStyle = ProcessWindowStyle.Hidden;
-                Process.Start(psi).WaitForExit();
-            }
-            catch
-            {
-            }
+            var psi = new ProcessStartInfo();
+            psi.FileName = ExecPath;
+            psi.Arguments = string.Format("stopdeamon");
+            psi.WindowStyle = ProcessWindowStyle.Hidden;
+            Process.Start(psi).WaitForExit();
         }
 
         public void GetLog(bool redirect = true)
@@ -166,7 +136,12 @@ namespace VS2GiderosBridge
             if (redirect)
             {
                 psi.RedirectStandardOutput = redirect;
-                psi.StandardOutputEncoding = Encoding.UTF8;
+
+                // 이것을 UTF8로 하면 JSON 깨졌다고 디버그 어댑터가 강종당함;;
+                // CP949로 해도 글자는 깨짐.
+                // 콘솔에서 gdrbridge log 실행했을 때도 똑같이 깨지는 걸로 봐서
+                // gdrbridge 문제로 강력 추정.
+                psi.StandardOutputEncoding = Encoding.ASCII;
             }
             var p = Process.Start(psi);
 

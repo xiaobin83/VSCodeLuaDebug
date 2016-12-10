@@ -149,7 +149,7 @@ namespace VSCodeDebug
         private static byte[] ConvertToBytes(MessageToVSCode message)
 		{
 			var asJson = JsonConvert.SerializeObject(message);
-			byte[] jsonBytes = Encoding.GetBytes(asJson);
+			byte[] jsonBytes = Encoding.UTF8.GetBytes(asJson);
 
             return PrependSizeHeader(jsonBytes);
 		}

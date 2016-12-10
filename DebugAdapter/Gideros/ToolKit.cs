@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Threading;
+using VSCodeDebug;
 
 namespace VS2GiderosBridge
 {
@@ -18,6 +19,8 @@ namespace VS2GiderosBridge
         #region members
 
         System.Text.RegularExpressions.Regex regexLuaSource = new System.Text.RegularExpressions.Regex(@"^\t*(?<path>.*?)\.lua:(?<line>\d+):(?<msg>.*)$", System.Text.RegularExpressions.RegexOptions.Compiled);
+
+        ICDPSender toVSCode;
 
         #endregion
 
@@ -35,9 +38,10 @@ namespace VS2GiderosBridge
         #endregion
 
         #region constructors
-        public ToolKit()
+        public ToolKit(ICDPSender toVSCode)
         {
             GiderosPath = @"C:\Program Files (x86)\Gideros";
+            this.toVSCode = toVSCode;
         }
         #endregion
 
@@ -59,16 +63,7 @@ namespace VS2GiderosBridge
             }
 
             // gdrbridge 기동
-            GdrBridge gdrBridge = null;
-            try
-            {
-                gdrBridge = new GdrBridge(this);
-            }
-            catch
-            {
-                return;
-            }
-
+            GdrBridge gdrBridge = new GdrBridge(this);
             gdrBridge.LaunchPlayer();
 
             // gdrdaemon 부팅을 기다린다.
@@ -111,7 +106,7 @@ namespace VS2GiderosBridge
                 // 플레이어 아웃풋을 긁어온다.           
                 gdrBridge.GetLog();
 
-                Thread.Sleep(100);
+                System.Threading.Thread.Sleep(100);
             }
         }
         #endregion
@@ -137,14 +132,21 @@ namespace VS2GiderosBridge
             }
 
             Console.WriteLine(msg);
+            toVSCode.SendOutput(
+                "stdout",
+                msg);
         }
         internal void LogWriteLine(string format, params object[] args)
         {
-            Console.WriteLine("[VS2GiderosBridge] " + string.Format(format, args));
+            toVSCode.SendOutput(
+                "stdout",
+                "[VS2GiderosBridge] " + string.Format(format, args));
         }
         internal void ErrorWriteLine(string format, params object[] args)
         {
-            Console.WriteLine("[VS2GiderosBridge] ERROR : " + string.Format(format, args));
+            toVSCode.SendOutput(
+                "stderr",
+                "[VS2GiderosBridge] ERROR : " + string.Format(format, args));
         }
         #endregion
     }

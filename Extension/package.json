@@ -50,8 +50,8 @@
                         "type": "lua",
                         "request": "launch",
                         "workingDirectory": "${workspaceRoot}",
-                        "executable": "C:\\Program Files (x86)\\Gideros\\GiderosPlayer.exe",
-                        "arguments": "main.lua",
+                        "giderosPath": "C:/Program Files (x86)/Gideros",
+                        "gprojPath": "${workspaceRoot}/GPROJ.gproj",
                         "listenPublicly": false,
                         "listenPort": 56789
                     },
@@ -71,8 +71,6 @@
                             "type",
                             "request",
                             "workingDirectory",
-                            "executable",
-                            "arguments",
                             "listenPublicly",
                             "listenPort"
                         ],
@@ -99,8 +97,18 @@
                             },
                             "listenPort": {
                                 "type": "integer",
-                                "description": "Local TCP port to communicate between debug adapter and debugee.",
+                                "description": "Local TCP port to communicate between debug adapter and debugee",
                                 "default": 56789
+                            },
+                            "giderosPath": {
+                                "type": "string",
+                                "description": "Gideros installation directory",
+                                "default": "c:/program files (x86)/gideros"
+                            },
+                            "gprojPath": {
+                                "type": "string",
+                                "description": "Path of .gproj file",
+                                "default": "${workspaceRoot}/GPROJ.gproj"
                             }
                         }
                     },

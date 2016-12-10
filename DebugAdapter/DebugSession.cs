@@ -149,56 +149,78 @@ namespace VSCodeDebug
 
         void Launch(string command, int seq, dynamic args)
         {
-            //--------------------------------
-            // validate argument 'executable'
-            var runtimeExecutable = (string)args.executable;
-            if (runtimeExecutable == null) { runtimeExecutable = ""; }
-
-            runtimeExecutable = runtimeExecutable.Trim();
-            if (runtimeExecutable.Length == 0)
+            string gprojPath = args.gprojPath;
+            if (gprojPath == null)
             {
-                SendErrorResponse(command, seq, 3005, "Property 'executable' is empty.");
-                return;
+                //--------------------------------
+                // validate argument 'executable'
+                var runtimeExecutable = (string)args.executable;
+                if (runtimeExecutable == null) { runtimeExecutable = ""; }
+
+                runtimeExecutable = runtimeExecutable.Trim();
+                if (runtimeExecutable.Length == 0)
+                {
+                    SendErrorResponse(command, seq, 3005, "Property 'executable' is empty.");
+                    return;
+                }
+                if (!File.Exists(runtimeExecutable))
+                {
+                    SendErrorResponse(command, seq, 3006, "Runtime executable '{path}' does not exist.", new { path = runtimeExecutable });
+                    return;
+                }
+
+                //--------------------------------
+                // validate argument 'workingDirectory'
+                var workingDirectory = ReadWorkingDirectory(command, seq, args);
+                if (workingDirectory == null) { return; }
+
+                //--------------------------------
+                var arguments = (string)args.arguments;
+                if (arguments == null) { arguments = ""; }
+
+                process = new Process();
+                process.StartInfo.CreateNoWindow = false;
+                process.StartInfo.WindowStyle = ProcessWindowStyle.Normal;
+                process.StartInfo.UseShellExecute = true;
+                process.StartInfo.WorkingDirectory = workingDirectory;
+                process.StartInfo.FileName = runtimeExecutable;
+                process.StartInfo.Arguments = arguments;
+
+                process.EnableRaisingEvents = true;
+                process.Exited += (object sender, EventArgs e) =>
+                {
+                    toVSCode.SendMessage(new TerminatedEvent());
+                };
+
+                var cmd = string.Format("{0} {1}", runtimeExecutable, arguments);
+                toVSCode.SendOutput("console", cmd);
+
+                try
+                {
+                    process.Start();
+                }
+                catch (Exception e)
+                {
+                    SendErrorResponse(command, seq, 3012, "Can't launch terminal ({reason}).", new { reason = e.Message });
+                    return;
+                }
             }
-            if (!File.Exists(runtimeExecutable))
+            else
             {
-                SendErrorResponse(command, seq, 3006, "Runtime executable '{path}' does not exist.", new { path = runtimeExecutable });
-                return;
-            }
+                var toolkit = new VS2GiderosBridge.ToolKit(toVSCode);
+                toolkit.GiderosPath = (string)args.giderosPath;
+                toolkit.GprojPath = (string)args.gprojPath;
 
-            //--------------------------------
-            // validate argument 'workingDirectory'
-            var workingDirectory = ReadWorkingDirectory(command, seq, args);
-            if (workingDirectory == null) { return; }
-
-            //--------------------------------
-            var arguments = (string)args.arguments;
-            if (arguments == null) { arguments = ""; }
-
-            process = new Process();
-            process.StartInfo.CreateNoWindow = false;
-            process.StartInfo.WindowStyle = ProcessWindowStyle.Normal;
-            process.StartInfo.UseShellExecute = true;
-            process.StartInfo.WorkingDirectory = workingDirectory;
-            process.StartInfo.FileName = runtimeExecutable;
-            process.StartInfo.Arguments = arguments;
-
-            process.EnableRaisingEvents = true;
-            process.Exited += (object sender, EventArgs e) => {
-                toVSCode.SendMessage(new TerminatedEvent());
-            };
-
-            var cmd = string.Format("{0} {1}", runtimeExecutable, arguments);
-            toVSCode.SendOutput("console", cmd);
-
-            try
-            {
-                process.Start();
-            }
-            catch (Exception e)
-            {
-                SendErrorResponse(command, seq, 3012, "Can't launch terminal ({reason}).", new { reason = e.Message });
-                return;
+                new System.Threading.Thread(() => {
+                    try
+                    {
+                        toolkit.Start();
+                    }
+                    catch (Exception e)
+                    {
+                        toVSCode.SendOutput("stderr", e.ToString());
+                    }
+                }).Start();
             }
 
             // 이후의 절차는 Attach랑 같다
