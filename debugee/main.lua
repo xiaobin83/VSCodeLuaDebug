@@ -3,9 +3,9 @@ package.path = '?.lua;lua/?.lua;' .. package.path
 local json = require 'dkjson'
 require 'strict'
 
-local debugee = (require 'vscode-debugee')
-local startResult, breakerType = debugee.start(json, {})
-print('debugee.start(): ', tostring(startResult), breakerType)
+local debuggee = (require 'vscode-debuggee')
+local startResult, breakerType = debuggee.start(json, {})
+print('debuggee.start(): ', tostring(startResult), breakerType)
 
 local json = require 'dkjson'
 
@@ -38,7 +38,7 @@ xpcall(
 		local a = 1 + nil
 	end,
 	function(e)
-		if debugee.enterDebugLoop(1, e) then
+		if debuggee.enterDebugLoop(1, e) then
 			-- ok
 		else
 			print('(XPCALL)')

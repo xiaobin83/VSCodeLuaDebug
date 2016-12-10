@@ -38,17 +38,17 @@ local function splitChunkName(s)
 	return a
 end
 if DO_TEST then
-	local a = splitChunkName('@.\\vscode-debugee.lua')  
+	local a = splitChunkName('@.\\vscode-debuggee.lua')  
 	assert(#a == 2)
 	assert(a[1] == '.')
-	assert(a[2] == 'vscode-debugee.lua')
+	assert(a[2] == 'vscode-debuggee.lua')
 
-	local a = splitChunkName('@C:\\dev\\VSCodeLuaDebug\\debugee/lua\\socket.lua')  
+	local a = splitChunkName('@C:\\dev\\VSCodeLuaDebug\\debuggee/lua\\socket.lua')  
 	assert(#a == 6)
 	assert(a[1] == 'c:')
 	assert(a[2] == 'dev')
 	assert(a[3] == 'vscodeluadebug')
-	assert(a[4] == 'debugee')
+	assert(a[4] == 'debuggee')
 	assert(a[5] == 'lua')
 	assert(a[6] == 'socket.lua')
 
@@ -251,7 +251,7 @@ end
 -- 순정 모드 }}}
 
 -------------------------------------------------------------------------------
-local debugee = {}
+local debuggee = {}
 local handlers = {}
 local sock
 local sourceBasePath = '.'
@@ -324,7 +324,7 @@ local function debugLoop()
 end
 
 -------------------------------------------------------------------------------
-function debugee.start(jsonLib, config)
+function debuggee.start(jsonLib, config)
 	json = jsonLib
 	assert(jsonLib)
 	
@@ -417,7 +417,7 @@ _G.__halt__ = function()
 end
 
 -------------------------------------------------------------------------------
-function debugee.enterDebugLoop(depth, what)
+function debuggee.enterDebugLoop(depth, what)
 	if sock == nil then
 		return false
 	end
@@ -680,5 +680,5 @@ function handlers.stepOut(req)
 end
 
 -------------------------------------------------------------------------------
-return debugee
+return debuggee
 
