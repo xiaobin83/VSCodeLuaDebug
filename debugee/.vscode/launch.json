@@ -16,8 +16,8 @@
             "type": "lua",
             "request": "launch",
             "workingDirectory": "${workspaceRoot}",
-            "executable": "C:\\Program Files (x86)\\Gideros\\GiderosPlayer.exe",
-            "arguments": "main.lua",
+            "giderosPath": "C:/Program Files (x86)/Gideros",
+            "gprojPath": "${workspaceRoot}/gideros.gproj",
             "listenPublicly": false,
             "listenPort": 56789
         },
@@ -27,7 +27,7 @@
             "request": "attach",
             "workingDirectory": "${workspaceRoot}",
             "listenPublicly": false,
-            "listenPort": 56789           
+            "listenPort": 56789
         }
     ]
 }
