@@ -376,6 +376,17 @@ local function sendSuccess(req, body)
 end
 
 -------------------------------------------------------------------------------
+local function sendFailure(req, msg)
+	sendMessage({
+		command = req.command,
+		success = false,
+		request_seq = req.seq,
+		type = "response",
+		message = msg
+	})	
+end
+
+-------------------------------------------------------------------------------
 local function sendEvent(eventName, body)
 	sendMessage({
 		event = eventName,
@@ -404,9 +415,9 @@ local function startDebugLoop()
 
 	local status, err = pcall(debugLoop)
 	if not status then
-		--print('★★★★★★')
-		--print(err)
-		--print('★★★★★★')
+		print('★★★★★★')
+		print(err)
+		print('★★★★★★')
 	end
 end
 
@@ -503,8 +514,15 @@ function handlers.stackTrace(req)
 			src = string.sub(src, 2) -- 앞의 '@' 떼어내기
 		end
 
+		local name
+		if info.name then
+			name = info.name .. ' (' .. (info.namewhat or '?') .. ')'
+		else
+			name = '?'
+		end
+
 		local sframe = {
-			name = (info.name or '?') .. ' (' .. (info.namewhat or '?') .. ')',
+			name = name,
 			source = {
 				name = nil,
 				path = Path.toAbsolute(sourceBasePath, src)
@@ -549,32 +567,37 @@ function handlers.scopes(req)
 end
 
 -------------------------------------------------------------------------------
+local function registerVar(name, value, noQuote)
+	local ty = type(value)
+	local item = {
+		name = tostring(name),
+		type = ty
+	}
+
+	if (ty == 'string' and (not noQuote)) then
+		item.value = '"' .. value .. '"'
+	else
+		item.value = tostring(value)
+	end
+
+	if (ty == 'table') or
+		(ty == 'function') then
+		storedVariables[nextVarRef] = value
+		item.variablesReference = nextVarRef
+		nextVarRef = nextVarRef + 1
+	else
+		item.variablesReference = -1
+	end
+
+	return item
+end
+
+-------------------------------------------------------------------------------
 function handlers.variables(req)
 	local varRef = req.arguments.variablesReference
 	local variables = {}
 	local function addVar(name, value, noQuote)
-		local ty = type(value)
-		local item = {
-			name = tostring(name),
-			type = ty
-		}
-
-		if (ty == 'string' and (not noQuote)) then
-			item.value = '"' .. value .. '"'
-		else
-			item.value = tostring(value)
-		end
-
-		if (ty == 'table') or
-		   (ty == 'function') then
-			storedVariables[nextVarRef] = value
-			item.variablesReference = nextVarRef
-			nextVarRef = nextVarRef + 1
-		else
-			item.variablesReference = -1
-		end
-
-		variables[#variables + 1] = item
+		variables[#variables + 1] = registerVar(name, value, noQuote) 
 	end
 
 	if (varRef >= 1000000) then
@@ -677,6 +700,77 @@ function handlers.stepOut(req)
 	stepTargetHeight = stackHeight() - (breaker.stackOffset.step + 1)
 	breaker.setLineBreak(step)
 	return 'CONTINUE'
+end
+
+-------------------------------------------------------------------------------
+function handlers.evaluate(req)
+	-- 실행할 소스 코드 준비
+	local sourceCode = req.arguments.expression
+	if string.sub(sourceCode, 1, 1) == '!' then
+		sourceCode = string.sub(sourceCode, 2)
+	else
+		sourceCode = 'return (' .. sourceCode .. ')'
+	end
+
+	-- 파싱
+	local fn, err = loadstring(sourceCode, 'X')
+	if fn == nil then
+		sendFailure(req, string.gsub(err, '^%[string %"X%"%]%:%d+%: ', ''))
+		return
+	end
+
+	-- 환경 준비.
+	-- 뭘 요구할지 모르니까 로컬, 업밸류, 글로벌을 죄다 복사해둔다.
+	-- 우선순위는 글로벌-업밸류-로컬 순서니까
+	-- 그 반대로 갖다놓아서 나중 것이 앞의 것을 덮어쓰게 한다. 
+	local depth = req.arguments.frameId
+	local tempG = {}
+	local declared = {}
+	local function set(k, v)
+		tempG[k] = v
+		declared[k] = true
+	end
+
+	for name, value in pairs(_G) do
+		set(name, value)
+	end
+
+	local info = debug.getinfo(depth, 'f')
+	if info and info.func then
+		for i = 1, 9999 do
+			local name, value = debug.getupvalue(info.func, i)
+			if name == nil then break end
+			set(name, value)
+		end
+	end
+
+	for i = 1, 9999 do
+		local name, value = debug.getlocal(depth, i)
+		if name == nil then break end
+		set(name, value)
+	end
+
+	local mt = {
+		__newindex = function() error('assignment not allowed', 2) end,
+		__index = function(t, k) if not declared[k] then error('not declared', 2) end end
+	}
+	setmetatable(tempG, mt)
+
+	-- 실행하고 결과 송신
+	setfenv(fn, tempG)
+	local success, aux = pcall(fn)
+	if not success then
+		sendFailure(req, string.gsub(aux, '^%[string %"X%"%]%:%d+%: ', ''))
+		return
+	end
+
+	local item = registerVar('', aux)
+
+	sendSuccess(req, {
+		result = item.value,
+		type = item.type,
+		variablesReference = item.variablesReference
+	})
 end
 
 -------------------------------------------------------------------------------

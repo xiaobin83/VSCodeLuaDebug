@@ -70,11 +70,11 @@ namespace VSCodeDebug
                     case "threads":
                     case "setBreakpoints":
                     case "configurationDone":
+                    case "evaluate":
                         toDebugee.Send(reqText);
                         break;
 
                     case "pause":
-                    case "evaluate":
                     case "source":
                         SendErrorResponse(command, seq, 1020, "command not supported: " + command);
                         break;
