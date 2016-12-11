@@ -822,6 +822,16 @@ static int getoffsetforchunkname(Proto* p, const char *chunkName, int lineNumber
 	return 0;
 }
 
+LUA_API int lua_setprotohalt(lua_State *L, Proto* p, const char* chunkName, int lineNumber, lua_Hook hook) {
+	int offset = getoffsetforchunkname(p, chunkName, lineNumber);
+
+	if (!offset)
+		return 0;
+
+	offset = sethalt(L, p, offset - 1, lineNumber, hook);
+	return offset + 1;
+}
+
 LUA_API int lua_sethalt(lua_State *L, const char* chunkName, int lineNumber, lua_Hook hook) {
 	Proto* p = L->l_G->proto_list;
 	while (p)
@@ -832,16 +842,6 @@ LUA_API int lua_sethalt(lua_State *L, const char* chunkName, int lineNumber, lua
 		p = p->list_next;
 	}
 	return 0;
-}
-
-LUA_API int lua_setprotohalt(lua_State *L, Proto* p, const char* chunkName, int lineNumber, lua_Hook hook) {
-	int offset = getoffsetforchunkname(p, chunkName, lineNumber);
-
-	if (!offset)
-		return 0;
-
-	offset = sethalt(L, p, offset - 1, lineNumber, hook);
-	return offset + 1;
 }
 
 LUA_API void lua_clearprotohalt(lua_State *L, Proto* p, const char* chunkName) {
@@ -859,7 +859,6 @@ LUA_API void lua_clearhalt(lua_State *L, const char* chunkName) {
 		lua_clearprotohalt(L, p, chunkName);
 		p = p->list_next;
 	}
-	return 0;
 }
 
 LUA_API void lua_gethalts(lua_State *L) {
