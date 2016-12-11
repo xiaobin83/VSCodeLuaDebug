@@ -111,6 +111,33 @@ void luaF_close (lua_State *L, StkId level) {
   }
 }
 
+/*
+#include <assert.h>
+
+void check_protolist(global_State* g, Proto* p)
+{
+	if (p == NULL) return;
+
+	if (p->list_prev == NULL)
+	{
+		assert(g->proto_list == p);
+	}
+	else
+	{
+		assert(p->list_prev->list_next == p);
+	}
+
+	if (p->list_next == NULL)
+	{
+		// OK
+	}
+	else
+	{
+		assert(p->list_next->list_prev == p);
+		check_protolist(g, p->list_next);
+	}
+}
+*/
 
 Proto *luaF_newproto (lua_State *L) {
   Proto *f = luaM_new(L, Proto);
@@ -142,20 +169,29 @@ Proto *luaF_newproto (lua_State *L) {
   f->list_prev = NULL;
   f->list_next = L->l_G->proto_list;
   L->l_G->proto_list = f;
+  if (f->list_next != NULL)
+  {
+	  f->list_next->list_prev = f;
+  }
 #endif
+  //check_protolist(L->l_G, L->l_G->proto_list);
   return f;
 }
 
-
 void luaF_freeproto (lua_State *L, Proto *f) {
 #ifdef LUA_PROTO_LIST
+  //check_protolist(L->l_G, f);
   if (f->list_prev) {
 	f->list_prev->list_next = f->list_next;
   }
   else {
     L->l_G->proto_list = f->list_next;
   }
-#endif
+  if (f->list_next) {
+    f->list_next->list_prev = f->list_prev;
+  }
+  //check_protolist(L->l_G, L->l_G->proto_list);
+  #endif
   luaM_freearray(L, f->code, f->sizecode, Instruction);
 // @HALT {
   luaM_freearray(L, f->halts, f->sizehalts, Halt);

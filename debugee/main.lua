@@ -1,7 +1,7 @@
 -- 유티에프-팔
+require 'strict'
 package.path = '?.lua;lua/?.lua;' .. package.path
 local json = require 'dkjson'
-require 'strict'
 
 local debuggee = (require 'vscode-debuggee')
 local startResult, breakerType = debuggee.start(json, {})
