@@ -149,6 +149,9 @@ namespace VSCodeDebug
 
         void Launch(string command, int seq, dynamic args)
         {
+            // 런치 전에 디버기가 접속할 수 있게 포트를 먼저 열어야 한다.
+            var listener = PrepareForDebuggee(command, seq, args);
+
             string gprojPath = args.gprojPath;
             if (gprojPath == null)
             {
@@ -223,15 +226,17 @@ namespace VSCodeDebug
                 }).Start();
             }
 
-            // 이후의 절차는 Attach랑 같다
-            Attach(command, seq, args);
+            AcceptDebuggee(command, seq, args, listener);
         }
 
         void Attach(string command, int seq, dynamic args)
         {
-            var workingDirectory = ReadWorkingDirectory(command, seq, args);
-            if (workingDirectory == null) { return; }
+            var listener = PrepareForDebuggee(command, seq, args);
+            AcceptDebuggee(command, seq, args, listener);
+        }
 
+        TcpListener PrepareForDebuggee(string command, int seq, dynamic args)
+        {
             IPAddress listenAddr = (bool)args.listenPublicly
                 ? IPAddress.Any
                 : IPAddress.Parse("127.0.0.1");
@@ -239,10 +244,20 @@ namespace VSCodeDebug
 
             TcpListener listener = new TcpListener(listenAddr, port);
             listener.Start();
+
             Program.WaitingUI.SetLabelText(
                 "Waiting for debugee at TCP " +
                 listenAddr.ToString() + ":" +
                 ((int)port).ToString() + "...");
+
+            return listener;
+        }
+
+        void AcceptDebuggee(string command, int seq, dynamic args, TcpListener listener)
+        {
+            var workingDirectory = ReadWorkingDirectory(command, seq, args);
+            if (workingDirectory == null) { return; }
+
             var clientSocket = listener.AcceptSocket(); // 여기서 블럭됨
             listener.Stop();
             Program.WaitingUI.Hide();
@@ -250,7 +265,8 @@ namespace VSCodeDebug
             var ncom = new NetworkCommunication(this, networkStream);
             this.toDebugee = ncom;
 
-            var welcome = new {
+            var welcome = new
+            {
                 command = "welcome",
                 sourceBasePath = workingDirectory
             };
