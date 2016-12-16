@@ -1,17 +1,15 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
-using System.Text;
 using System.Xml;
 
 namespace GiderosPlayerRemote
 {
-    class RemoteController
+    public class RemoteController
     {
         Socket soc;
         NetworkStream networkStream;

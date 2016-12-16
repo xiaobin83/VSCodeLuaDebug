@@ -3,6 +3,8 @@
 /DebugAdapter/packages/
 /GiderosPlayerRemote/bin/
 /GiderosPlayerRemote/obj/
+/GiderosPlayerRemoteTest/bin/
+/GiderosPlayerRemoteTest/obj/
 /debugee/lua-source/Debug/
 /debugee/lua-source/Release/
 /debugee/lua-source/x64/Debug/
