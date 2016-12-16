@@ -1,11 +1,18 @@
 <project>
- <properties tv_icon="" html5_mem="256" architecture="0" autorotation="0" winrt_package="com.yourdomain.yourapp" splash_v_image="" fps="60" osx_domain="giderosmobile.com" android_template="0" windowWidth="0" windowHeight="0" encryptCode="0" exportMode="0" version="1.0" retinaDisplay="0" backgroundColor="#ffffff" osx_org="GiderosMobile" version_code="1" splash_h_image="" mouseToTouch="1" osx_category="5" encryptAssets="0" touchToMouse="1" logicalHeight="480" osx_bundle="com.yourdomain." win_org="GiderosMobile" orientation="0" logicalWidth="320" disableSplash="0" app_icon="" iosDevice="0" winrt_org="GiderosMobile" win_domain="giderosmobile.com" scaleMode="0" html5_host="" packageName="com.yourdomain.yourapp" ios_bundle="com.yourdomain." mouseTouchOrder="0">
+ <properties html5_mem="256" version_code="1" win_org="GiderosMobile" windowWidth="0" exportMode="0" ios_bundle="com.yourdomain." winrt_package="com.yourdomain.yourapp" splash_h_image="" backgroundColor="#ffffff" osx_category="5" disableSplash="0" app_icon="" autorotation="0" osx_org="GiderosMobile" iosDevice="0" version="1.0" osx_domain="giderosmobile.com" scaleMode="0" windowHeight="0" tv_icon="" mouseToTouch="1" fps="60" html5_host="" logicalHeight="480" logicalWidth="320" osx_bundle="com.yourdomain." win_domain="giderosmobile.com" packageName="com.yourdomain.yourapp" retinaDisplay="0" encryptAssets="0" android_template="0" encryptCode="0" architecture="0" winrt_org="GiderosMobile" touchToMouse="1" mouseTouchOrder="0" splash_v_image="" orientation="0">
   <imageScales/>
   <plugins/>
   <exports/>
  </properties>
- <file excludeFromExecution="1" source="strict.lua"/>
- <file excludeFromExecution="1" source="lua/socket.lua"/>
- <file excludeFromExecution="1" source="vscode-debuggee.lua"/>
+ <folder name="subfolder2">
+  <file source="asdf/b.lua"/>
+ </folder>
+ <folder name="subfolder">
+  <file source="a.lua"/>
+ </folder>
+ <file source="strict.lua" excludeFromExecution="1"/>
+ <file source="lua/socket.lua" excludeFromExecution="1"/>
+ <file source="vscode-debuggee.lua" excludeFromExecution="1"/>
  <file source="gideros-main.lua"/>
+ <dependency from="asdf/b.lua" to="a.lua"/>
 </project>

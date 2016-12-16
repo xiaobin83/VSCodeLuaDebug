@@ -31,8 +31,9 @@ end
 
 local timer = Timer.new(1000)
 timer:addEventListener(Event.TIMER, function()
-	print("한글")
-	print("B")
+	print("한글!!")
+	print("왜날뷁!!")
+	log(os.timer())
 end)
 timer:start()
 
