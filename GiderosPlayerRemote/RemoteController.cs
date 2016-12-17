@@ -9,42 +9,60 @@ using System.Xml;
 
 namespace GiderosPlayerRemote
 {
+    public enum LogType
+    {
+        PlayerOutput,
+        Info,
+        Warning
+    }
+
     public class RemoteController
     {
         Socket soc;
         NetworkStream networkStream;
         int nextSeqId = 1;
         string projectFileName;
+        Action<LogType, string> logger;
 
-        public void Run(
+        public bool TryStart(
             string addr,
             int port,
-            string gprojPath)
+            string gprojPath,
+            Action<LogType, string> logger)
         {
             this.projectFileName = gprojPath;
+            this.logger = logger;
 
+            if (soc != null) { soc.Dispose(); }
             soc = new Socket(
                 AddressFamily.InterNetwork,
                 SocketType.Stream,
                 ProtocolType.Tcp);
-            soc.Connect(new IPEndPoint(IPAddress.Parse(addr), 15000));
+            try
+            {
+                soc.Connect(new IPEndPoint(IPAddress.Parse(addr), 15000));
+            }
+            catch (SocketException e)
+            {
+                if (e.ErrorCode == 10061) { return false; }
+                else { throw; }
+            }
             soc.SendBufferSize = 1024 * 1024;
             networkStream = new NetworkStream(soc);
-
             Play();
-            ReadLoop(soc);
+            return true;           
         }
 
-        void ReadLoop(Socket from)
+        public void ReadLoop()
         {
-            var reader = new GiderosMessageReader(from);
+            var reader = new GiderosMessageReader(soc);
 
             while (true)
             {
                 ReceivedGiderosMessage msg = reader.TryTakeMessageFromBuffer();
                 if (msg == null)
                 {
-                    reader.ReceiveMore();
+                    if (reader.ReceiveMore() == 0) { return; }
                     continue;
                 }
 
@@ -60,7 +78,7 @@ namespace GiderosPlayerRemote
                         break;
 
                     default:
-                        Console.WriteLine("unknown message:" + msgType);
+                        logger(LogType.Warning, "unknown message:" + msgType);
                         break;
                 }
             }
@@ -68,7 +86,7 @@ namespace GiderosPlayerRemote
 
         void HandleOutput(ReceivedGiderosMessage msg)
         {
-            Console.Write(msg.ReadString());
+            logger(LogType.PlayerOutput, msg.ReadString());
         }
 
         List<KeyValuePair<string, string>> fileList = new List<KeyValuePair<string, string>>();
@@ -116,7 +134,7 @@ namespace GiderosPlayerRemote
                     NewMessage(GiderosMessageType.DeleteFile)
                         .AppendString(iter.Key)
                         .Send();
-                    Console.WriteLine("delete " + iter.Key);
+                    logger(LogType.Info, "delete " + iter.Key);
                 }
             }
 
@@ -187,7 +205,7 @@ namespace GiderosPlayerRemote
                     NewMessage(GiderosMessageType.CreateFolder)
                         .AppendString(dir)
                         .Send();
-                    Console.WriteLine("cfolder " + dir);
+                    logger(LogType.Info, "cfolder " + dir);
                 }
 
                 string fileName = Path.Combine(path, s2);
@@ -200,7 +218,7 @@ namespace GiderosPlayerRemote
                         .AppendString(s1)
                         .AppendByteArray(bytes)
                         .Send();
-                    Console.WriteLine("send " + s1);
+                    logger(LogType.Info, "send " + s1);
                 }
                 catch (FileNotFoundException)
                 {
@@ -215,7 +233,7 @@ namespace GiderosPlayerRemote
             var playMsg = NewMessage(GiderosMessageType.Play);
             foreach (string f in luaFilesToPlay)
             {
-                Console.WriteLine("play " + f);
+                logger(LogType.Info, "play " + f);
                 playMsg.AppendString(f);
             }
             playMsg.Send();
@@ -386,7 +404,7 @@ namespace GiderosPlayerRemote
                 }
             }
 
-            //Console.WriteLine("md5 time: " + (DateTime.Now - begin).TotalSeconds.ToString());
+            //logger("md5 time: " + (DateTime.Now - begin).TotalSeconds.ToString());
         }
 
         byte[] MD5FromFile(string path)
@@ -400,7 +418,7 @@ namespace GiderosPlayerRemote
             }
             catch (FileNotFoundException)
             {
-                Console.WriteLine("Fild not found: " + path);
+                logger(LogType.Warning, "Fild not found: " + path);
                 return new byte[16];
             }
         }

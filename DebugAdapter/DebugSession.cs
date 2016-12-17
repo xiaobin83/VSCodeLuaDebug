@@ -10,6 +10,7 @@
 *  Licensed under the MIT License. See License.txt in the project root for license information.
 *--------------------------------------------------------------------------------------------*/
 
+using GiderosPlayerRemote;
 using Newtonsoft.Json;
 using System;
 using System.Diagnostics;
@@ -33,7 +34,7 @@ namespace VSCodeDebug
 
         void ICDPListener.FromVSCode(string command, int seq, dynamic args, string reqText)
         {
-//            MessageBox.OK(reqText);
+            //MessageBox.OK(reqText);
 
             if (args == null)
             {
@@ -210,20 +211,46 @@ namespace VSCodeDebug
             }
             else
             {
-                var toolkit = new VS2GiderosBridge.ToolKit(toVSCode);
-                toolkit.GiderosPath = (string)args.giderosPath;
-                toolkit.GprojPath = (string)args.gprojPath;
+                var rc = new RemoteController();
 
-                new System.Threading.Thread(() => {
-                    try
+                var connectStartedAt = DateTime.Now;
+                bool alreadyLaunched = false;
+                while (!rc.TryStart("127.0.0.1", 15000, gprojPath, GiderosRemoteControllerLogger))
+                {
+                    if (DateTime.Now - connectStartedAt > TimeSpan.FromSeconds(10))
                     {
-                        toolkit.Start();
+                        SendErrorResponse(command, seq, 3012, "Can't connect to GiderosPlayer.", new { });
+                        return;
                     }
-                    catch (Exception e)
+                    else if (alreadyLaunched)
                     {
-                        toVSCode.SendOutput("stderr", e.ToString());
+                        System.Threading.Thread.Sleep(100);
                     }
-                }).Start();
+                    else
+                    {
+                        try
+                        {
+                            var giderosPath = (string)args.giderosPath;
+                            process = new Process();
+                            process.StartInfo.CreateNoWindow = false;
+                            process.StartInfo.WindowStyle = ProcessWindowStyle.Normal;
+                            process.StartInfo.WorkingDirectory = giderosPath;
+                            process.StartInfo.FileName = Path.Combine(giderosPath, "GiderosPlayer.exe");
+                            process.Start();
+
+                            Program.WaitingUI.SetLabelText(
+                                "Launching " + process.StartInfo.FileName + "...");
+                        }
+                        catch (Exception e)
+                        {
+                            SendErrorResponse(command, seq, 3012, "Can't launch GiderosPlayer ({reason}).", new { reason = e.Message });
+                            return;
+                        }
+                        alreadyLaunched = true;
+                    }
+                }
+
+                new System.Threading.Thread(rc.ReadLoop).Start();
             }
 
             AcceptDebuggee(command, seq, args, listener);
@@ -301,6 +328,23 @@ namespace VSCodeDebug
         public void DebugeeHasGone()
         {
             toVSCode.SendMessage(new TerminatedEvent());
+        }
+
+        // 주의: 다른 스레드에서 불림.
+        void GiderosRemoteControllerLogger(LogType logType, string content)
+        {
+            switch (logType)
+            {
+                case LogType.Info:
+                    toVSCode.SendOutput("console", content);
+                    break;
+                case LogType.PlayerOutput:
+                    toVSCode.SendOutput("stdout", content);
+                    break;
+                case LogType.Warning:
+                    toVSCode.SendOutput("stderr", content);
+                    break;
+            }
         }
     }
 }

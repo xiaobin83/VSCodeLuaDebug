@@ -55,8 +55,6 @@
     <Compile Include="Debugee\IDebugeeSender.cs" />
     <Compile Include="Debugee\NetworkCommunication.cs" />
     <Compile Include="DebugSession.cs" />
-    <Compile Include="Gideros\GdrBridge.cs" />
-    <Compile Include="Gideros\ToolKit.cs" />
     <Compile Include="Main.cs" />
     <Compile Include="MessageBox.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -75,9 +73,16 @@
       <DependentUpon>WaitingUI.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\GiderosPlayerRemote\GiderosPlayerRemote.csproj">
+      <Project>{9B443183-90EE-4805-AC8A-224ECBCBE1A7}</Project>
+      <Name>GiderosPlayerRemote</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>copy Newtonsoft.Json.dll ..\..\..\Extension
+copy GiderosPlayerRemote.dll ..\..\..\Extension
 copy DebugAdapter.exe ..\..\..\Extension</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

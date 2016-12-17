@@ -16,7 +16,7 @@ namespace GiderosPlayerRemote
             this.buffer = new byte[1000];
         }
 
-        public void ReceiveMore()
+        public int ReceiveMore()
         {
             // 절반 이상 차면 두 배로
             if (bufferEnd >= buffer.Length / 2)
@@ -45,10 +45,11 @@ namespace GiderosPlayerRemote
                 Console.WriteLine();
                 */
                 bufferEnd += rcvd;
+                return rcvd;
             }
             else
             {
-                Console.WriteLine(serr);
+                throw new Exception(serr.ToString());
             }
         }
 
