@@ -28,6 +28,7 @@ namespace GiderosPlayerRemote
                 SocketType.Stream,
                 ProtocolType.Tcp);
             soc.Connect(new IPEndPoint(IPAddress.Parse(addr), 15000));
+            soc.SendBufferSize = 1024 * 1024;
             networkStream = new NetworkStream(soc);
 
             Play();
@@ -363,6 +364,8 @@ namespace GiderosPlayerRemote
 
         void UpdateMD5()
         {
+            //var begin = DateTime.Now;
+
             // .tmp/~.md5 파일 포맷이 QDataStream에 의존하기 때문에
             // 역공학하기 귀찮아서 .md5 캐싱 구현 스킵함.
             // 요즘 PC에서 md5 전체 재계산하는거 얼마나 느린지 모르겠는데
@@ -382,6 +385,8 @@ namespace GiderosPlayerRemote
                         MD5FromFile(absfilename));
                 }
             }
+
+            //Console.WriteLine("md5 time: " + (DateTime.Now - begin).TotalSeconds.ToString());
         }
 
         byte[] MD5FromFile(string path)
