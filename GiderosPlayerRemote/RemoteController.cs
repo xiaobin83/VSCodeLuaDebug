@@ -180,13 +180,22 @@ namespace GiderosPlayerRemote
                 Console.WriteLine("cfolder " + Path.GetDirectoryName(s1));
 
                 string fileName = Path.Combine(path, s2);
-                byte[] bytes = File.ReadAllBytes(fileName);
 
-                NewMessage(GiderosMessageType.File)
-                    .AppendString(s1)
-                    .AppendByteArray(bytes)
-                    .Send();
-                Console.WriteLine("send " + s1);
+                try
+                {
+                    byte[] bytes = File.ReadAllBytes(fileName);
+
+                    NewMessage(GiderosMessageType.File)
+                        .AppendString(s1)
+                        .AppendByteArray(bytes)
+                        .Send();
+                    Console.WriteLine("send " + s1);
+                }
+                catch (FileNotFoundException)
+                {
+                    // md5 계산에서 이미 경고를 냈으므로
+                    // 여기에선 무시한다
+                }
             }
 
             //client_->sendProjectProperties(properties_);
@@ -358,13 +367,26 @@ namespace GiderosPlayerRemote
 
                 //if (iter == md5_.end() || mtime != iter.value().first)
                 {
-                    using (var stream = File.OpenRead(absfilename))
-                    {
-                        md5[filename] = new KeyValuePair<DateTime, byte[]>(
-                            mtime,
-                            md5calculator.ComputeHash(stream));
-                    }
+                    md5[filename] = new KeyValuePair<DateTime, byte[]>(
+                        mtime,
+                        MD5FromFile(absfilename));
                 }
+            }
+        }
+
+        byte[] MD5FromFile(string path)
+        {
+            try
+            {
+                using (var stream = File.OpenRead(path))
+                {
+                    return md5calculator.ComputeHash(stream);
+                }
+            }
+            catch (FileNotFoundException)
+            {
+                Console.WriteLine("Fild not found: " + path);
+                return new byte[16];
             }
         }
 
