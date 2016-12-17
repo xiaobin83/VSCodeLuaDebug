@@ -735,21 +735,25 @@ function handlers.evaluate(req)
 		set(name, value)
 	end
 
-	local info = debug.getinfo(depth, 'f')
-	if info and info.func then
+	if depth then
+		local info = debug.getinfo(depth, 'f')
+		if info and info.func then
+			for i = 1, 9999 do
+				local name, value = debug.getupvalue(info.func, i)
+				if name == nil then break end
+				set(name, value)
+			end
+		end
+
 		for i = 1, 9999 do
-			local name, value = debug.getupvalue(info.func, i)
+			local name, value = debug.getlocal(depth, i)
 			if name == nil then break end
 			set(name, value)
 		end
+	else
+		-- VSCode가 depth를 안 보낼 수도 있다.
+		-- 특정 스택 프레임을 선택하지 않은, 전역 이름만 조회하는 경우이다.
 	end
-
-	for i = 1, 9999 do
-		local name, value = debug.getlocal(depth, i)
-		if name == nil then break end
-		set(name, value)
-	end
-
 	local mt = {
 		__newindex = function() error('assignment not allowed', 2) end,
 		__index = function(t, k) if not declared[k] then error('not declared', 2) end end
