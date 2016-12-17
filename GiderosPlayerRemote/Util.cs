@@ -39,7 +39,7 @@ namespace GiderosPlayerRemote
         {
             var now = DateTime.Now;
             var wtime = File.GetLastWriteTime(path);
-            return (int)(wtime - now).TotalSeconds;
+            return (int)(now - wtime).TotalSeconds;
         }
     }
 }
