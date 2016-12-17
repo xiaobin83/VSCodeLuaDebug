@@ -47,6 +47,7 @@ namespace GiderosPlayerRemote
                 if (e.ErrorCode == 10061) { return false; }
                 else { throw; }
             }
+            soc.ReceiveBufferSize = 1024 * 1024;
             soc.SendBufferSize = 1024 * 1024;
             networkStream = new NetworkStream(soc);
             Play();
