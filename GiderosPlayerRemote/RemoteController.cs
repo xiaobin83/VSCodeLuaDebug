@@ -167,6 +167,7 @@ namespace GiderosPlayerRemote
 
             //---------------------------------------------------------
             // 여기부터 void Application::timer()
+            var cfolderSent = new HashSet<string>();
             while (fileQueue.Count > 0)
             {
                 string s1 = fileQueue.Peek().Key;
@@ -174,10 +175,19 @@ namespace GiderosPlayerRemote
                 fileQueue.Dequeue();
 
                 // create remote directories
-                NewMessage(GiderosMessageType.CreateFolder)
-                    .AppendString(Path.GetDirectoryName(s1))
-                    .Send();
-                Console.WriteLine("cfolder " + Path.GetDirectoryName(s1));
+                var dir = Path.GetDirectoryName(s1);
+                if (cfolderSent.Contains(dir))
+                {
+                    // pass
+                }
+                else
+                {
+                    cfolderSent.Add(dir);
+                    NewMessage(GiderosMessageType.CreateFolder)
+                        .AppendString(dir)
+                        .Send();
+                    Console.WriteLine("cfolder " + dir);
+                }
 
                 string fileName = Path.Combine(path, s2);
 
