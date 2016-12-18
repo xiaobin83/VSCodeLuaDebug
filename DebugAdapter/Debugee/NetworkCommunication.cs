@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Net.Sockets;
 using System.Text;
 
@@ -81,8 +82,18 @@ namespace VSCodeDebug
             byte[] bodyBytes = Encoding.UTF8.GetBytes(reqText);
             string header = '#' + bodyBytes.Length.ToString() + "\n";
             byte[] headerBytes = Encoding.UTF8.GetBytes(header);
-            networkStream.Write(headerBytes, 0, headerBytes.Length);
-            networkStream.Write(bodyBytes, 0, bodyBytes.Length);
+            try
+            {
+                networkStream.Write(headerBytes, 0, headerBytes.Length);
+                networkStream.Write(bodyBytes, 0, bodyBytes.Length);
+            }
+            catch (IOException)
+            {
+                lock (debugeeListener)
+                {
+                    debugeeListener.DebugeeHasGone();
+                }
+            }
         }
     }
 }
