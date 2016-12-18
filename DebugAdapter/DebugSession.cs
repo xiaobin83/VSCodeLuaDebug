@@ -196,7 +196,7 @@ namespace VSCodeDebug
                     toVSCode.SendMessage(new TerminatedEvent());
                 };
 
-                var cmd = string.Format("{0} {1}", runtimeExecutable, arguments);
+                var cmd = string.Format("{0} {1}\n", runtimeExecutable, arguments);
                 toVSCode.SendOutput("console", cmd);
 
                 try
@@ -331,6 +331,7 @@ namespace VSCodeDebug
         }
 
         // 주의: 다른 스레드에서 불림.
+        string lastStdoutFromGideros;
         void GiderosRemoteControllerLogger(LogType logType, string content)
         {
             switch (logType)
@@ -339,7 +340,16 @@ namespace VSCodeDebug
                     toVSCode.SendOutput("console", content);
                     break;
                 case LogType.PlayerOutput:
-                    toVSCode.SendOutput("stdout", content);
+                    if (!string.IsNullOrEmpty(lastStdoutFromGideros) &&
+                        content == "\n")
+                    {
+                        // skip. 줄넘김이 별도 메시지로 온다.
+                    }
+                    else
+                    {
+                        toVSCode.SendOutput("stdout", content);
+                    }
+                    lastStdoutFromGideros = content;
                     break;
                 case LogType.Warning:
                     toVSCode.SendOutput("stderr", content);

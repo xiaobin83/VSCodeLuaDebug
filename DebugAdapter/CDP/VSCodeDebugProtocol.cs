@@ -170,10 +170,6 @@ namespace VSCodeDebug
         {
             if (!String.IsNullOrEmpty(data))
             {
-                if (data[data.Length - 1] != '\n')
-                {
-                    data += '\n';
-                }
                 SendMessage(new OutputEvent(category, data));
             }
         }
