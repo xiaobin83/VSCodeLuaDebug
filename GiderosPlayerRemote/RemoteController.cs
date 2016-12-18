@@ -206,7 +206,7 @@ namespace GiderosPlayerRemote
                     NewMessage(GiderosMessageType.CreateFolder)
                         .AppendString(dir)
                         .Send();
-                    logger(LogType.Info, "cfolder " + dir);
+                    //logger(LogType.Info, "cfolder " + dir);
                 }
 
                 string fileName = Path.Combine(path, s2);
@@ -227,6 +227,7 @@ namespace GiderosPlayerRemote
                     // 여기에선 무시한다
                 }
             }
+            logger(LogType.Info, "Uploading finished.");
 
             //client_->sendProjectProperties(properties_);
 
@@ -234,7 +235,7 @@ namespace GiderosPlayerRemote
             var playMsg = NewMessage(GiderosMessageType.Play);
             foreach (string f in luaFilesToPlay)
             {
-                logger(LogType.Info, "play " + f);
+                //logger(LogType.Info, "play " + f);
                 playMsg.AppendString(f);
             }
             playMsg.Send();
