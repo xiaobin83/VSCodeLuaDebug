@@ -20,17 +20,18 @@ local function log(str)
 end
 
 require 'json'
-local startResult, breakerType =
-	(require 'vscode-debuggee').start(json)
+local debuggee = require 'vscode-debuggee'
+local startResult, breakerType = debuggee.start(json)
 
 if startResult then
 	print("startResult: " .. tostring(startResult))
 	print("breakerType: " .. tostring(breakerType))
-	log("됐어, 연결됐어.")
+	log("됐어, 연결됐어")
 end
 
 local timer = Timer.new(1000)
 timer:addEventListener(Event.TIMER, function()
+	debuggee.poll()
 	print("한글!!")
 	print("왜날뷁!!")
 	print("")

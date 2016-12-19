@@ -324,6 +324,7 @@ local function debugLoop()
 end
 
 -------------------------------------------------------------------------------
+local sockArray = {}
 function debuggee.start(jsonLib, config)
 	json = jsonLib
 	assert(jsonLib)
@@ -345,6 +346,7 @@ function debuggee.start(jsonLib, config)
 	local err
 	sock, err = socket.tcp()
 	if not sock then error(err) end
+	sockArray = { sock }
 	if sock.settimeout then sock:settimeout(config.connectTimeout) end
 	local res, err = sock:connect(config.controllerHost, tostring(config.controllerPort))
 	if not res then
@@ -362,6 +364,34 @@ function debuggee.start(jsonLib, config)
 
 	debugLoop()
 	return true, breakerType
+end
+
+-------------------------------------------------------------------------------
+function debuggee.poll()
+	if not sock then return end
+
+	-- Processes commands in the queue.
+	-- Immediately returns when the queue is/became empty.
+	while true do
+		local r, w, e = socket.select(sockArray, nil, 0)
+		if e == 'timeout' then break end
+
+		local msg = recvMessage()
+		--print('POLL-RECEIVED: ' .. json.encode(msg))
+		
+		if msg.command == 'pause' then
+			debuggee.enterDebugLoop(1)
+			return
+		end
+
+		local fn = handlers[msg.command]
+		if fn then
+			local rv = fn(msg)
+			-- Ignores rv, because this loop never blocks except explicit pause command.
+		else
+			--print('POLL-UNKNOWN DEBUG COMMAND: ' .. tostring(msg.command))
+		end
+	end
 end
 
 -------------------------------------------------------------------------------
