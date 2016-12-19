@@ -47,6 +47,18 @@ namespace GiderosPlayerRemote
             return this;
         }
 
+        public GiderosMessageToSend AppendInt(int n)
+        {
+            bodyWriter.Write(n);
+            return this;
+        }
+
+        public GiderosMessageToSend AppendFloat(float n)
+        {
+            bodyWriter.Write(n);
+            return this;
+        }
+
         public GiderosMessageToSend AppendString(string s)
         {
             bodyWriter.Write(Encoding.UTF8.GetBytes(s));

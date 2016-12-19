@@ -52,6 +52,7 @@
     <Compile Include="DependencyGraph.cs" />
     <Compile Include="GiderosMessageToSend.cs" />
     <Compile Include="GiderosMessageType.cs" />
+    <Compile Include="ProjectProperties.cs" />
     <Compile Include="ReceivedGiderosMessage.cs" />
     <Compile Include="GiderosMessageReader.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

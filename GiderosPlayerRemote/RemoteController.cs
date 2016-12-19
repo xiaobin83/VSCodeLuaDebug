@@ -23,6 +23,11 @@ namespace GiderosPlayerRemote
         int nextSeqId = 1;
         string projectFileName;
         Action<LogType, string> logger;
+        List<KeyValuePair<string, string>> fileList = new List<KeyValuePair<string, string>>();
+        Dictionary<string, KeyValuePair<DateTime, byte[]>> md5 = new Dictionary<string, KeyValuePair<DateTime, byte[]>>();
+        DependencyGraph dependencyGraph = new DependencyGraph();
+        MD5 md5calculator = MD5.Create();
+        ProjectProperties properties_ = new ProjectProperties();
 
         public bool TryStart(
             string addr,
@@ -89,11 +94,6 @@ namespace GiderosPlayerRemote
         {
             logger(LogType.PlayerOutput, msg.ReadString());
         }
-
-        List<KeyValuePair<string, string>> fileList = new List<KeyValuePair<string, string>>();
-        Dictionary<string, KeyValuePair<DateTime, byte[]>> md5 = new Dictionary<string, KeyValuePair<DateTime, byte[]>>();
-        DependencyGraph dependencyGraph = new DependencyGraph();
-        MD5 md5calculator = MD5.Create();
 
         void HandleFileList(ReceivedGiderosMessage msg)
         {
@@ -229,7 +229,7 @@ namespace GiderosPlayerRemote
             }
             logger(LogType.Info, "Uploading finished.");
 
-            //client_->sendProjectProperties(properties_);
+            SendProjectProperties();
 
             //-----------------------------------------------
             var playMsg = NewMessage(GiderosMessageType.Play);
@@ -241,56 +241,88 @@ namespace GiderosPlayerRemote
             playMsg.Send();
         }
 
+        void SendProjectProperties()
+        {
+            var m = NewMessage(GiderosMessageType.SendProjectProperties);
+
+            m.AppendInt(properties_.scaleMode);
+            m.AppendInt(properties_.logicalWidth);
+            m.AppendInt(properties_.logicalHeight);
+
+            m.AppendInt((int)properties_.imageScales.Count);
+            foreach (var s in properties_.imageScales)
+            {
+                m.AppendString(s.Key);
+                m.AppendFloat((float)s.Value);
+            }
+
+            m.AppendInt(properties_.orientation);
+            m.AppendInt(properties_.fps);
+
+            m.AppendInt(properties_.retinaDisplay);
+            m.AppendInt(properties_.autorotation);
+
+            m.AppendInt(properties_.mouseToTouch ? 1 : 0);
+            m.AppendInt(properties_.touchToMouse ? 1 : 0);
+            m.AppendInt(properties_.mouseTouchOrder);
+
+            m.AppendInt(properties_.windowWidth);
+            m.AppendInt(properties_.windowHeight);
+
+            m.Send();
+        }
+
         void Play()
         {
             XmlDocument doc = new XmlDocument();
             doc.Load(projectFileName);
 
-            /*
             // read properties
             {
-                QDomElement root = doc.documentElement();
+                var root = doc.DocumentElement;
 
-                properties_.clear();
+                properties_.Clear();
 
-                QDomElement properties = root.firstChildElement("properties");
-
+                var properties = (XmlElement)root.SelectSingleNode("properties");
+                    
                 // graphics options
-                if (!properties.attribute("scaleMode").isEmpty())
-                    properties_.scaleMode = properties.attribute("scaleMode").toInt();
-                if (!properties.attribute("logicalWidth").isEmpty())
-                    properties_.logicalWidth = properties.attribute("logicalWidth").toInt();
-                if (!properties.attribute("logicalHeight").isEmpty())
-                    properties_.logicalHeight = properties.attribute("logicalHeight").toInt();
-                QDomElement imageScales = properties.firstChildElement("imageScales");
-                for(QDomNode n = imageScales.firstChild(); !n.isNull(); n = n.nextSibling())
+                if (properties.HasAttribute("scaleMode"))
+                    properties_.scaleMode = int.Parse(properties.GetAttribute("scaleMode"));
+                if (properties.HasAttribute("logicalWidth"))
+                    properties_.logicalWidth = int.Parse(properties.GetAttribute("logicalWidth"));
+
+                if (properties.HasAttribute("logicalHeight"))
+                    properties_.logicalHeight = int.Parse(properties.GetAttribute("logicalHeight"));
+                var imageScales = properties.SelectSingleNode("imageScales");
+                foreach (var n in imageScales.ChildNodes)
                 {
-                    QDomElement scale = n.toElement();
-                    if(!scale.isNull())
-                        properties_.imageScales.push_back(std::make_pair(scale.attribute("suffix"), scale.attribute("scale").toDouble()));
+                    var scale = (XmlElement)n;
+                    properties_.imageScales.Add(
+                        new KeyValuePair<string, double>(
+                            scale.GetAttribute("suffix"),
+                            double.Parse(scale.GetAttribute("scale"))));
                 }
-                if (!properties.attribute("orientation").isEmpty())
-                    properties_.orientation = properties.attribute("orientation").toInt();
-                if (!properties.attribute("fps").isEmpty())
-                    properties_.fps = properties.attribute("fps").toInt();
+                if (properties.HasAttribute("orientation"))
+                    properties_.orientation = int.Parse(properties.GetAttribute("orientation"));
+                if (properties.HasAttribute("fps"))
+                    properties_.fps = int.Parse(properties.GetAttribute("fps"));
 
                 // iOS options
-                if (!properties.attribute("retinaDisplay").isEmpty())
-                    properties_.retinaDisplay = properties.attribute("retinaDisplay").toInt();
-                if (!properties.attribute("autorotation").isEmpty())
-                    properties_.autorotation = properties.attribute("autorotation").toInt();
+                if (properties.HasAttribute("retinaDisplay"))
+                    properties_.retinaDisplay = int.Parse(properties.GetAttribute("retinaDisplay"));
+                if (properties.HasAttribute("autorotation"))
+                    properties_.autorotation = int.Parse(properties.GetAttribute("autorotation"));
 
                 // export options
-                if (!properties.attribute("architecture").isEmpty())
-                    properties_.architecture = properties.attribute("architecture").toInt();
-                if (!properties.attribute("exportMode").isEmpty())
-                    properties_.exportMode = properties.attribute("exportMode").toInt();
-                if (!properties.attribute("iosDevice").isEmpty())
-                    properties_.iosDevice = properties.attribute("iosDevice").toInt();
-                if (!properties.attribute("packageName").isEmpty())
-                    properties_.packageName = properties.attribute("packageName");
+                if (properties.HasAttribute("architecture"))
+                    properties_.architecture = int.Parse(properties.GetAttribute("architecture"));
+                if (properties.HasAttribute("exportMode"))
+                    properties_.exportMode = int.Parse(properties.GetAttribute("exportMode"));
+                if (properties.HasAttribute("iosDevice"))
+                    properties_.iosDevice = int.Parse(properties.GetAttribute("iosDevice"));
+                if (properties.HasAttribute("packageName"))
+                    properties_.packageName = properties.GetAttribute("packageName");
             }
-            */
 
             // populate file list and dependency graph
             {
