@@ -232,14 +232,21 @@ namespace VSCodeDebug
                         {
                             var giderosPath = (string)args.giderosPath;
                             process = new Process();
-                            process.StartInfo.CreateNoWindow = false;
-                            process.StartInfo.WindowStyle = ProcessWindowStyle.Normal;
+                            process.StartInfo.UseShellExecute = true;
+                            process.StartInfo.CreateNoWindow = true;
+                            process.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
                             process.StartInfo.WorkingDirectory = giderosPath;
-                            process.StartInfo.FileName = Path.Combine(giderosPath, "GiderosPlayer.exe");
+
+                            // I don't know why this fix keeps GiderosPlayer.exe running
+                            // after DebugAdapter stops.
+                            // And I don't want to know..
+                            process.StartInfo.FileName = "cmd.exe";
+                            process.StartInfo.Arguments = "/c \"start GiderosPlayer.exe\"";
                             process.Start();
 
                             Program.WaitingUI.SetLabelText(
-                                "Launching " + process.StartInfo.FileName + "...");
+                                "Launching " + process.StartInfo.FileName + " " +
+                                process.StartInfo.Arguments + "...");
                         }
                         catch (Exception e)
                         {
@@ -271,12 +278,6 @@ namespace VSCodeDebug
 
             TcpListener listener = new TcpListener(listenAddr, port);
             listener.Start();
-
-            Program.WaitingUI.SetLabelText(
-                "Waiting for debugee at TCP " +
-                listenAddr.ToString() + ":" +
-                ((int)port).ToString() + "...");
-
             return listener;
         }
 
@@ -285,7 +286,11 @@ namespace VSCodeDebug
             var workingDirectory = ReadWorkingDirectory(command, seq, args);
             if (workingDirectory == null) { return; }
 
-            var clientSocket = listener.AcceptSocket(); // 여기서 블럭됨
+            Program.WaitingUI.SetLabelText(
+                "Waiting for debugee at TCP " +
+                listener.LocalEndpoint.ToString() + "...");
+
+            var clientSocket = listener.AcceptSocket(); // blocked here
             listener.Stop();
             Program.WaitingUI.Hide();
             var networkStream = new NetworkStream(clientSocket);
