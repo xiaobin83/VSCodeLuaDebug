@@ -53,7 +53,7 @@
     <Compile Include="CDP\VSCodeDebugProtocol.cs" />
     <Compile Include="Debugee\IDebugeeListener.cs" />
     <Compile Include="Debugee\IDebugeeSender.cs" />
-    <Compile Include="Debugee\NetworkCommunication.cs" />
+    <Compile Include="Debugee\DebuggeeProtocol.cs" />
     <Compile Include="DebugSession.cs" />
     <Compile Include="Main.cs" />
     <Compile Include="MessageBox.cs" />

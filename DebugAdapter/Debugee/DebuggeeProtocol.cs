@@ -5,13 +5,13 @@ using System.Text;
 
 namespace VSCodeDebug
 {
-    class NetworkCommunication : IDebugeeSender
+    class DebuggeeProtocol : IDebugeeSender
     {
         IDebugeeListener debugeeListener;
         NetworkStream networkStream;
         ByteBuffer recvBuffer = new ByteBuffer();
 
-        public NetworkCommunication(IDebugeeListener debugeeListener, NetworkStream networkStream)
+        public DebuggeeProtocol(IDebugeeListener debugeeListener, NetworkStream networkStream)
         {
             this.debugeeListener = debugeeListener;
             this.networkStream = networkStream;

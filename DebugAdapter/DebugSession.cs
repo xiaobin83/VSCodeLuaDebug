@@ -294,7 +294,7 @@ namespace VSCodeDebug
             listener.Stop();
             Program.WaitingUI.Hide();
             var networkStream = new NetworkStream(clientSocket);
-            var ncom = new NetworkCommunication(this, networkStream);
+            var ncom = new DebuggeeProtocol(this, networkStream);
             this.toDebugee = ncom;
 
             var welcome = new
