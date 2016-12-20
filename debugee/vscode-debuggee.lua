@@ -2,6 +2,11 @@ local socket = require 'socket'
 local json
 local sethook = debug.sethook;
 debug.sethook = nil;
+local onError = function(e)
+	print('****************************************************')
+	print(e)
+	print('****************************************************')
+end
 
 -------------------------------------------------------------------------------
 local DO_TEST = false
@@ -354,6 +359,9 @@ function debuggee.start(jsonLib, config)
 	config.connectTimeout = config.connectTimeout or 5.0
 	config.controllerHost = config.controllerHost or 'localhost'
 	config.controllerPort = config.controllerPort or 56789
+	if config.onError then
+		onError = config.onError
+	end
 
 	local breakerType
 	if debug.sethalt then
@@ -484,9 +492,7 @@ local function startDebugLoop()
 
 	local status, err = pcall(debugLoop)
 	if not status then
-		print('★★★★★★')
-		print(err)
-		print('★★★★★★')
+		onError(err)
 	end
 end
 
@@ -834,6 +840,7 @@ function handlers.evaluate(req)
 	setfenv(fn, tempG)
 	local success, aux = pcall(fn)
 	if not success then
+		aux = aux or '' -- Execution of 'error()' returns nil as aux
 		sendFailure(req, string.gsub(aux, '^%[string %"X%"%]%:%d+%: ', ''))
 		return
 	end
