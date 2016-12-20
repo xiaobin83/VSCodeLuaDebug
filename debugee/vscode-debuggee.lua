@@ -1,5 +1,7 @@
 local socket = require 'socket'
 local json
+local sethook = debug.sethook;
+debug.sethook = nil;
 
 -------------------------------------------------------------------------------
 local DO_TEST = false
@@ -108,11 +110,11 @@ if DO_TEST then
 end
 -- 패스 조작 }}}
 
+local coroutineSet = {}
+setmetatable(coroutineSet, { __mode = 'v' })
+
 -- 순정 모드 {{{
 local function createHaltBreaker()
-	local sethook = debug.sethook;
-	debug.sethook = nil;
-
 	-- chunkname 매칭 {
 	local loadedChunkNameMap = {}
 	for chunkname, _ in pairs(debug.getchunknames()) do
@@ -134,6 +136,14 @@ local function createHaltBreaker()
 	end
 	-- chunkname 매칭 }
 
+	local lineBreakCallback = nil
+	local function updateCoroutineHook(c)
+		if lineBreakCallback then
+			sethook(c, lineBreakCallback, 'l')
+		else
+			sethook(c)
+		end
+	end
 	return {
 		setBreakpoints = function(path, lines)
 			local foundChunkName = findMostSimilarChunkName(path)
@@ -157,6 +167,15 @@ local function createHaltBreaker()
 			else
 				sethook()
 			end
+
+			lineBreakCallback = callback
+			for cid, c in pairs(coroutineSet) do
+				updateCoroutineHook(c)
+			end
+		end,
+
+		coroutineAdded = function(c)
+			updateCoroutineHook(c)
 		end,
 
 		-- 실험적으로 알아낸 값들-_-ㅅㅂ
@@ -199,7 +218,6 @@ local function createPureBreaker()
 		return foundPath
 	end
 
-	local sethook = debug.sethook 
 	local entered = false
 	local function hookfunc()
 		if entered then return false end
@@ -220,8 +238,7 @@ local function createPureBreaker()
 
 		entered = false		 
 	end
-	debug.sethook(hookfunc, 'l')
-	debug.sethook = nil;
+	sethook(hookfunc, 'l')
 
 	return {
 		setBreakpoints = function(path, lines)
@@ -235,6 +252,10 @@ local function createPureBreaker()
 
 		setLineBreak = function(callback)
 			lineBreakCallback = callback
+		end,
+
+		coroutineAdded = function(c)
+			sethook(c, hookfunc, 'l')
 		end,
 
 		-- 실험적으로 알아낸 값들-_-ㅅㅂ
@@ -395,6 +416,21 @@ function debuggee.poll()
 end
 
 -------------------------------------------------------------------------------
+local function getCoroutineId(c)
+	-- 'thread: 011DD5B0'
+	--  12345678^
+	local threadIdHex = string.sub(tostring(c), 9) 
+	return tonumber(threadIdHex, 16)
+end
+
+-------------------------------------------------------------------------------
+function debuggee.addCoroutine(c)
+	local cid = getCoroutineId(c)
+	coroutineSet[cid] = c
+	breaker.coroutineAdded(c)
+end
+
+-------------------------------------------------------------------------------
 local function sendSuccess(req, body)
 	sendMessage({
 		command = req.command,
@@ -426,20 +462,23 @@ local function sendEvent(eventName, body)
 end
 
 -------------------------------------------------------------------------------
-local function startDebugLoop()
+local function currentThreadId()
+--[[
 	local threadId = 0
 	if coroutine.running() then
-		-- 'thread: 011DD5B0'
-		--  12345678^
-		local threadIdHex = string.sub(tostring(coroutine.running()), 9) 
-		threadId = tonumber(threadIdHex, 16)
 	end
+	return threadId
+]]
+	return 0
+end
 
+-------------------------------------------------------------------------------
+local function startDebugLoop()
 	sendEvent(
 		'stopped',
 		{
 			reason = 'breakpoint',
-			threadId = threadId,
+			threadId = currentThreadId(),
 			allThreadsStopped = true
 		})
 
@@ -513,10 +552,11 @@ end
 
 -------------------------------------------------------------------------------
 function handlers.threads(req)
-	-- TODO: 일단 메인 스레드만. 지금은 모든 코루틴을 순회할 방법이 없다.
+	local c = coroutine.running()
+
 	local mainThread = {
-		id = 0,
-		name = "main"
+		id = currentThreadId(),
+		name = (c and tostring(c)) or "main"
 	}
 
 	sendSuccess(req, {

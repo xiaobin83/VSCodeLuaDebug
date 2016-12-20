@@ -9,6 +9,16 @@ print('debuggee.start(): ', tostring(startResult), breakerType)
 
 local json = require 'dkjson'
 
+local c = coroutine.create(function()
+	local a = 'aaaa'
+	print('in coroutine a')
+	print('in coroutine b')
+end)
+debuggee.addCoroutine(c)
+coroutine.resume(c)
+
+
+
 local function d()
 	local s = '하늘에서 정의가 빗발친다'
 	local x = nil
