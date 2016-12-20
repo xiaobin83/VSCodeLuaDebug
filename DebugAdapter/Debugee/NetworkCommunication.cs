@@ -57,7 +57,7 @@ namespace VSCodeDebug
             if (headerEnd < 0) { return false; }
 
             string header = s.Substring(0, headerEnd);
-            if (header[0] != '#') { throw new Exception("헤더 이상함:" + header); }
+            if (header[0] != '#') { throw new Exception("Broken header:" + header); }
             var bodySize = int.Parse(header.Substring(1));
 
             // 헤더는 모두 0~127 아스키 문자로만 이루어지기 때문에
