@@ -1,3 +1,16 @@
+TOC
+
+- 시작하기
+- 고속 중단점 패치에 대해서
+- 에러 발생시 디버거로 진입하기
+- 폴링하기
+- vscode-debuggee 레퍼런스 매뉴얼
+
+
+------------------------------------------------
+
+
+
 Lua Debugger를 가지고 루아 프로그램을 디버깅하기 위해서는
 디버깅 대상이 될 프로그램에 vscode-debugee.lua 를 넣고 작동시켜야 합니다.
 mobdebug를 써보신 분이라면 익숙하실 것입니다.
@@ -6,13 +19,14 @@ mobdebug를 써보신 분이라면 익숙하실 것입니다.
 
 https://raw.githubusercontent.com/lee-seungjae/VSCodeLuaDebug/master/debugee/vscode-debuggee.lua 를 다운로드해서 프로젝트에 포함시키십시오.
 
-require 'json'
-local startResult, breakerType =
-    (require 'vscode-debuggee').start(json)
-if startResult then
-    print("startResult: " .. tostring(startResult))
-    print("breakerType: " .. tostring(breakerType))
-end
+    require 'json'
+    local startResult, breakerType = (require 'vscode-debuggee').start(json)
+    
+    if startResult then
+        print("startResult: " .. tostring(startResult))
+        print("breakerType: " .. tostring(breakerType))
+    end
+
 이런 코드를 모든 소스코드가 로드된 이후에 실행시키십시오.
 
 주의: json 테이블은 encode와 decode를 가져야 합니다.
