@@ -9,7 +9,8 @@
             "executable": "${workspaceRoot}/lua.exe",
             "arguments": "main.lua",
             "listenPublicly": false,
-            "listenPort": 56789
+            "listenPort": 56789,
+            "encoding": "UTF-8"
         },
         {
             "name": "launch-gideros",
@@ -19,7 +20,8 @@
             "giderosPath": "C:/Program Files (x86)/Gideros",
             "gprojPath": "${workspaceRoot}/gideros.gproj",
             "listenPublicly": false,
-            "listenPort": 56789
+            "listenPort": 56789,
+            "encoding": "UTF-8"
         },
         {
             "name": "wait",
@@ -27,7 +29,8 @@
             "request": "attach",
             "workingDirectory": "${workspaceRoot}",
             "listenPublicly": false,
-            "listenPort": 56789
+            "listenPort": 56789,
+            "encoding": "UTF-8"
         }
     ]
 }

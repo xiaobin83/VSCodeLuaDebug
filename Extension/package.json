@@ -43,7 +43,8 @@
                         "executable": "${workspaceRoot}/lua.exe",
                         "arguments": "main.lua",
                         "listenPublicly": false,
-                        "listenPort": 56789
+                        "listenPort": 56789,
+                        "encoding": "UTF-8"
                     },
                     {
                         "name": "launch-gideros",
@@ -53,7 +54,8 @@
                         "giderosPath": "C:/Program Files (x86)/Gideros",
                         "gprojPath": "${workspaceRoot}/GPROJ.gproj",
                         "listenPublicly": false,
-                        "listenPort": 56789
+                        "listenPort": 56789,
+                        "encoding": "UTF-8"
                     },
                     {
                         "name": "wait",
@@ -61,7 +63,8 @@
                         "request": "attach",
                         "workingDirectory": "${workspaceRoot}",
                         "listenPublicly": false,
-                        "listenPort": 56789
+                        "listenPort": 56789,
+                        "encoding": "UTF-8"
                     }
                 ],
                 "configurationAttributes": {
@@ -109,6 +112,11 @@
                                 "type": "string",
                                 "description": "Path of .gproj file",
                                 "default": "${workspaceRoot}/GPROJ.gproj"
+                            },
+                            "encoding": {
+                                "type": "string",
+                                "description": "Encoding of the debuggee. (Example: 'UTF-8', '949')",
+                                "default": "UTF-8"
                             }
                         }
                     },
@@ -136,6 +144,11 @@
                                 "type": "integer",
                                 "description": "Local TCP port to communicate between debug adapter and debugee.",
                                 "default": 56789
+                            },
+                            "encoding": {
+                                "type": "string",
+                                "description": "Encoding of the debuggee. (Example: 'UTF-8', '949')",
+                                "default": "UTF-8"
                             }
                         }
                     }

@@ -17,6 +17,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 
 namespace VSCodeDebug
 {
@@ -286,6 +287,25 @@ namespace VSCodeDebug
             var workingDirectory = ReadWorkingDirectory(command, seq, args);
             if (workingDirectory == null) { return; }
 
+            var encodingName = (string)args.encoding;
+            Encoding encoding;
+            if (encodingName != null)
+            {
+                int codepage;
+                if (int.TryParse(encodingName, out codepage))
+                {
+                    encoding = Encoding.GetEncoding(codepage);
+                }
+                else
+                {
+                    encoding = Encoding.GetEncoding(encodingName);
+                }
+            }
+            else
+            {
+                encoding = Encoding.UTF8;
+            }
+
             Program.WaitingUI.SetLabelText(
                 "Waiting for debugee at TCP " +
                 listener.LocalEndpoint.ToString() + "...");
@@ -293,8 +313,10 @@ namespace VSCodeDebug
             var clientSocket = listener.AcceptSocket(); // blocked here
             listener.Stop();
             Program.WaitingUI.Hide();
-            var networkStream = new NetworkStream(clientSocket);
-            var ncom = new DebuggeeProtocol(this, networkStream);
+            var ncom = new DebuggeeProtocol(
+                this,
+                new NetworkStream(clientSocket),
+                encoding);
             this.toDebugee = ncom;
 
             var welcome = new

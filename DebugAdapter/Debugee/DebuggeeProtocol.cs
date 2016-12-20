@@ -10,11 +10,16 @@ namespace VSCodeDebug
         IDebugeeListener debugeeListener;
         NetworkStream networkStream;
         ByteBuffer recvBuffer = new ByteBuffer();
+        Encoding encoding;
 
-        public DebuggeeProtocol(IDebugeeListener debugeeListener, NetworkStream networkStream)
+        public DebuggeeProtocol(
+            IDebugeeListener debugeeListener,
+            NetworkStream networkStream,
+            Encoding encoding)
         {
             this.debugeeListener = debugeeListener;
             this.networkStream = networkStream;
+            this.encoding = encoding;
         }
 
         public void StartThread()
@@ -52,7 +57,7 @@ namespace VSCodeDebug
 
         bool ProcessData()
         {
-            string s = recvBuffer.GetString(System.Text.Encoding.UTF8);
+            string s = recvBuffer.GetString(encoding);
             int headerEnd = s.IndexOf('\n');
             if (headerEnd < 0) { return false; }
 
@@ -67,7 +72,7 @@ namespace VSCodeDebug
             recvBuffer.RemoveFirst(headerEnd + 1);
             byte[] bodyBytes = recvBuffer.RemoveFirst(bodySize);
 
-            string body = Encoding.UTF8.GetString(bodyBytes);
+            string body = encoding.GetString(bodyBytes);
             //MessageBox.OK(body);
 
             lock (debugeeListener)
@@ -79,9 +84,9 @@ namespace VSCodeDebug
 
         void IDebugeeSender.Send(string reqText)
         {
-            byte[] bodyBytes = Encoding.UTF8.GetBytes(reqText);
+            byte[] bodyBytes = encoding.GetBytes(reqText);
             string header = '#' + bodyBytes.Length.ToString() + "\n";
-            byte[] headerBytes = Encoding.UTF8.GetBytes(header);
+            byte[] headerBytes = encoding.GetBytes(header);
             try
             {
                 networkStream.Write(headerBytes, 0, headerBytes.Length);
