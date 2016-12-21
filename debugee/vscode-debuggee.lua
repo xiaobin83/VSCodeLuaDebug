@@ -1,13 +1,32 @@
+local debuggee = {}
+
 local socket = require 'socket'
 local json
-local sethook = debug.sethook;
-debug.sethook = nil;
-local onError = nil;
+local handlers = {}
+local sock
+local sourceBasePath = '.'
+local storedVariables = {}
+local nextVarRef = 1
+local baseDepth
+local breaker
+
+local onError = nil
 
 local function defaultOnError(e)
 	print('****************************************************')
 	print(e)
 	print('****************************************************')
+end
+
+-------------------------------------------------------------------------------
+local sethook = debug.sethook
+debug.sethook = nil
+
+local cocreate = coroutine.create
+coroutine.create = function(f)
+	local c = cocreate(f)
+	debuggee.addCoroutine(c)
+	return c
 end
 
 -------------------------------------------------------------------------------
@@ -277,16 +296,6 @@ local function createPureBreaker()
 end
 
 -- 순정 모드 }}}
-
--------------------------------------------------------------------------------
-local debuggee = {}
-local handlers = {}
-local sock
-local sourceBasePath = '.'
-local storedVariables = {}
-local nextVarRef = 1
-local baseDepth
-local breaker
 
 -------------------------------------------------------------------------------
 -- 네트워크 유틸리티 {{{

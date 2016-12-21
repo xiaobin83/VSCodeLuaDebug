@@ -18,7 +18,6 @@ local c = coroutine.create(function()
 	print('in coroutine a')
 	print('in coroutine b')
 end)
-debuggee.addCoroutine(c)
 coroutine.resume(c)
 
 
