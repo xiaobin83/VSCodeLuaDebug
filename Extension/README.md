@@ -6,7 +6,7 @@ You can use the Lua Debugger extension to debug Lua programs with Visual Studio 
 # Requirements
 
 - You should be able to use `luasocket` in a Lua program to be debugged.
-- You should be able to use a JSON library in a Lua program to be debugged.
+- You should be able to use a JSON library in a Lua program to be debugged.  
 `cjson` and` dkjson` are recommended, but you can use other JSON libraries whose interfaces are compatible.
 - Your code or third party library should not call `debug.sethook`.
 - Currently, the debugger can only work with Windows.
@@ -15,7 +15,7 @@ You can use the Lua Debugger extension to debug Lua programs with Visual Studio 
 
 # Configuration
 
-In order to debug Lua programs with Lua Debugger, you have to put vscode-debugee.lua in the program to be debugged.
+In order to debug Lua programs with Lua Debugger, you have to put vscode-debugee.lua in the program to be debugged.  
 If you have used mobdebug, you are familiar with it.
 
 
@@ -74,7 +74,7 @@ debuggee.poll()
 
 # Gideros Support
 
-You can run Gideros Player directly from Visual Studio Code.
+You can run Gideros Player directly from Visual Studio Code.  
 Please refer to the 'launch-gideros' section of the debugging settings.
 
 
