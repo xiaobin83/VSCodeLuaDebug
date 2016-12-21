@@ -23,15 +23,16 @@ mobdebug를 써보셨다면 익숙하실 것입니다.
 
 ## 디버거 연결
 
-1. https://github.com/lee-seungjae/VSCodeLuaDebug/blob/master/debugee/vscode-debuggee.lua 를 다운로드해서 프로젝트에 넣습니다.
+1. [vscode-debuggee.lua](https://github.com/lee-seungjae/VSCodeLuaDebug/blob/master/debugee/vscode-debuggee.lua)를 다운로드해서 프로젝트에 넣습니다.
 
 2. 다음 코드를 모든 Lua 소스코드가 로드된 이후에 실행되도록 프로그램에 붙여넣으세요.
 여러분이 어떤 JSON 라이브러리를 사용하는지에 따라 코드를 적절히 수정해야 할 수 있습니다.  
+```lua
     local json = require 'dkjson'
     local debuggee = require 'vscode-debuggee'
     local startResult, breakerType = debuggee.start(json)
     print('debuggee start ->', startResult, breakerType)
-
+```
 3. 디버깅할 프로그램이 있는 폴더를 Visual Studio Code에서 열고, `Ctrl-Shift-D`로 디버그 창을 열고, 디버깅 설정을 적절히 편집하세요.
 
 4. 디버깅할 프로그램의 적절한 위치에 F9를 눌러 중단점을 설정하세요.
@@ -43,7 +44,7 @@ mobdebug를 써보셨다면 익숙하실 것입니다.
 ## 에러가 발생했을 때 디버거로 진입하도록 설정하기
 
 에러핸들링할 위치에 아래 코드를 붙여넣으세요.
-
+```lua
     xpcall(
         function()
             -- 실제 실행될 코드
@@ -58,7 +59,7 @@ mobdebug를 써보셨다면 익숙하실 것입니다.
                 print(debug.traceback())
             end
         end)
-
+```
 
 
 ## 실행 도중에 디버그 명령을 처리할 수 있도록 설정하기
@@ -85,9 +86,9 @@ Gideros Player를 Visual Studio Code에서 직접 실행할 수 있습니다.
 
 `vscode-debuggee.lua`는 기본적으로 `debug.sethook`을 이용해서 중단점 기능을 구현했기 때문에 Lua 프로그램 실행 속도를 크게 떨어뜨립니다. 이런 성능 저하는 Lua VM에 간단한 패치를 적용함으로써 극복할 수 있습니다.
 
-lua 5.1.5를 위한 패치 파일을 https://github.com/lee-seungjae/lua-5.1.5-op_halt/blob/master/op_halt.patch 에서 구할 수 있습니다.
+lua 5.1.5를 위한 패치 파일을 [여기](https://github.com/lee-seungjae/lua-5.1.5-op_halt/blob/master/op_halt.patch)에서 구할 수 있습니다.
 
-lua 5.1.5에 이 패치를 적용한 결과는 https://github.com/lee-seungjae/lua-5.1.5-op_halt 에서 다운로드할 수 있습니다.
+lua 5.1.5에 이 패치를 적용한 결과는 [여기](https://github.com/lee-seungjae/lua-5.1.5-op_halt)에서 다운로드할 수 있습니다.
 
 
 
