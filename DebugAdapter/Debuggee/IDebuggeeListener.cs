@@ -1,8 +1,8 @@
 ﻿namespace VSCodeDebug
 {
-    public interface IDebugeeListener
+    public interface IDebuggeeListener
     {
         void FromDebuggee(byte[] json);
-        void DebugeeHasGone();
+        void DebuggeeHasGone();
     }
 }

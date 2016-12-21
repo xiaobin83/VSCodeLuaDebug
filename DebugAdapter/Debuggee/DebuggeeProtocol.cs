@@ -5,19 +5,19 @@ using System.Text;
 
 namespace VSCodeDebug
 {
-    class DebuggeeProtocol : IDebugeeSender
+    class DebuggeeProtocol : IDebuggeeSender
     {
-        IDebugeeListener debugeeListener;
+        IDebuggeeListener debuggeeListener;
         NetworkStream networkStream;
         ByteBuffer recvBuffer = new ByteBuffer();
         Encoding encoding;
 
         public DebuggeeProtocol(
-            IDebugeeListener debugeeListener,
+            IDebuggeeListener debuggeeListener,
             NetworkStream networkStream,
             Encoding encoding)
         {
-            this.debugeeListener = debugeeListener;
+            this.debuggeeListener = debuggeeListener;
             this.networkStream = networkStream;
             this.encoding = encoding;
         }
@@ -49,9 +49,9 @@ namespace VSCodeDebug
                 //Program.MessageBox(IntPtr.Zero, e.ToString(), "LuaDebug", 0);
             }
 
-            lock (debugeeListener)
+            lock (debuggeeListener)
             {
-                debugeeListener.DebugeeHasGone();
+                debuggeeListener.DebuggeeHasGone();
             }
         }
 
@@ -75,14 +75,14 @@ namespace VSCodeDebug
             string body = encoding.GetString(bodyBytes);
             //MessageBox.OK(body);
 
-            lock (debugeeListener)
+            lock (debuggeeListener)
             {
-                debugeeListener.FromDebuggee(bodyBytes);
+                debuggeeListener.FromDebuggee(bodyBytes);
             }
             return true;
         }
 
-        void IDebugeeSender.Send(string reqText)
+        void IDebuggeeSender.Send(string reqText)
         {
             byte[] bodyBytes = encoding.GetBytes(reqText);
             string header = '#' + bodyBytes.Length.ToString() + "\n";
@@ -94,9 +94,9 @@ namespace VSCodeDebug
             }
             catch (IOException)
             {
-                lock (debugeeListener)
+                lock (debuggeeListener)
                 {
-                    debugeeListener.DebugeeHasGone();
+                    debuggeeListener.DebuggeeHasGone();
                 }
             }
         }

@@ -21,10 +21,10 @@ using System.Text;
 
 namespace VSCodeDebug
 {
-    public class DebugSession : ICDPListener, IDebugeeListener
+    public class DebugSession : ICDPListener, IDebuggeeListener
     {
         public ICDPSender toVSCode;
-        public IDebugeeSender toDebugee;
+        public IDebuggeeSender toDebuggee;
         private Process process;
 
         public DebugSession()
@@ -74,7 +74,7 @@ namespace VSCodeDebug
                     case "configurationDone":
                     case "evaluate":
                     case "pause":
-                        toDebugee.Send(reqText);
+                        toDebuggee.Send(reqText);
                         break;
 
                     case "source":
@@ -94,7 +94,7 @@ namespace VSCodeDebug
             }
         }
 
-        void IDebugeeListener.FromDebuggee(byte[] json)
+        void IDebuggeeListener.FromDebuggee(byte[] json)
         {
             toVSCode.SendJSONEncodedMessage(json);
         }
@@ -307,7 +307,7 @@ namespace VSCodeDebug
             }
 
             Program.WaitingUI.SetLabelText(
-                "Waiting for debugee at TCP " +
+                "Waiting for a debuggee at TCP " +
                 listener.LocalEndpoint.ToString() + "...");
 
             var clientSocket = listener.AcceptSocket(); // blocked here
@@ -317,14 +317,14 @@ namespace VSCodeDebug
                 this,
                 new NetworkStream(clientSocket),
                 encoding);
-            this.toDebugee = ncom;
+            this.toDebuggee = ncom;
 
             var welcome = new
             {
                 command = "welcome",
                 sourceBasePath = workingDirectory
             };
-            toDebugee.Send(JsonConvert.SerializeObject(welcome));
+            toDebuggee.Send(JsonConvert.SerializeObject(welcome));
 
             ncom.StartThread();
             SendResponse(command, seq, null);
@@ -352,7 +352,7 @@ namespace VSCodeDebug
             return workingDirectory;
         }
 
-        public void DebugeeHasGone()
+        public void DebuggeeHasGone()
         {
             toVSCode.SendMessage(new TerminatedEvent());
         }
