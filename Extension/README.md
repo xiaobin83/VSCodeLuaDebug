@@ -80,13 +80,13 @@ Please refer to the 'launch-gideros' section of the debugging settings.
 
 # Remote Debugging
 
-If you set the debugging setting to `wait` and start debugging, Visual Studio Code will wait for a debuggee without executing one.
+If you set the debugging setting to `wait` and start debugging, Visual Studio Code will wait for a debuggee without executing one.  
 This is useful if you want to see the string that the debugging target leaves on the console, or if the debugger and the debugging target must be running on different machines.
 
 
 # OP_HALT Patch
 
-Basically `Vscode-debuggee.lua` drops the speed of running Lua programs because it implements the breakpoint mechanism using `debug.sethook`.
+Basically `Vscode-debuggee.lua` drops the speed of running Lua programs because it implements the breakpoint mechanism using `debug.sethook`.  
 This performance degradation can be overcome by applying a simple patch to the Lua VM.
 
 A patch file for lua 5.1.5 is available [here](https://github.com/lee-seungjae/lua-5.1.5-op_halt/blob/master/op_halt.patch).
@@ -107,14 +107,14 @@ The result of applying this patch to lua 5.1.5 can be downloaded [here](https://
 # vscode-debuggee.lua Reference
 
 ## debuggee.start(jsonLib, config)
-Connect with the debugger. `jsonLib` is a JSON library containing `.encode` and `.decode` functions.
-`Config.onError` is a callback to receive when an error occurs in the` vscode-debuggee` module.
+Connect with the debugger. `jsonLib` is a JSON library containing `.encode` and `.decode` functions.  
+`Config.onError` is a callback to receive when an error occurs in the` vscode-debuggee` module.  
 `Config.connectTimeout`,` config.controllerHost`, and `config.controllerPort` are settings for remote debugging.
 
 ## debuggee.poll()
 Processes queued debugging commands and returns immediately.
 
 ## debuggee.enterDebugLoop(depth[, what])
-Stops running the Lua program and start debugging from the current location.
-`depth` specifies the relative depth of the stack to indicate where the debugger is currently running. 0 means the place to call `debuggee.enterDebugLoop`, and 1 means a step shallow.
-`what` is the message you want to pass to the Visual Studio Code as you start debugging.
+Stops running the Lua program and start debugging from the current location.  
+`depth` specifies the relative depth of the stack to indicate where the debugger is currently running. 0 means the place to call `debuggee.enterDebugLoop`, and 1 means a step shallow.  
+`what` is the message you want to pass to the Visual Studio Code as you start debugging.  
