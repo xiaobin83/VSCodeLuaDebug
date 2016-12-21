@@ -2,7 +2,9 @@ local socket = require 'socket'
 local json
 local sethook = debug.sethook;
 debug.sethook = nil;
-local onError = function(e)
+local onError = nil;
+
+local function defaultOnError(e)
 	print('****************************************************')
 	print(e)
 	print('****************************************************')
@@ -356,12 +358,10 @@ function debuggee.start(jsonLib, config)
 	assert(jsonLib)
 	
 	config = config or {}
-	config.connectTimeout = config.connectTimeout or 5.0
-	config.controllerHost = config.controllerHost or 'localhost'
-	config.controllerPort = config.controllerPort or 56789
-	if config.onError then
-		onError = config.onError
-	end
+	local connectTimeout = config.connectTimeout or 5.0
+	local controllerHost = config.controllerHost or 'localhost'
+	local controllerPort = config.controllerPort or 56789
+	onError              = config.onError or defaultOnError
 
 	local breakerType
 	if debug.sethalt then
@@ -376,8 +376,8 @@ function debuggee.start(jsonLib, config)
 	sock, err = socket.tcp()
 	if not sock then error(err) end
 	sockArray = { sock }
-	if sock.settimeout then sock:settimeout(config.connectTimeout) end
-	local res, err = sock:connect(config.controllerHost, tostring(config.controllerPort))
+	if sock.settimeout then sock:settimeout(connectTimeout) end
+	local res, err = sock:connect(controllerHost, tostring(controllerPort))
 	if not res then
 		sock:close()
 		sock = nil

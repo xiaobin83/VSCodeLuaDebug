@@ -357,8 +357,8 @@ namespace VSCodeDebug
             toVSCode.SendMessage(new TerminatedEvent());
         }
 
-        // 주의: 다른 스레드에서 불림.
-        string lastStdoutFromGideros;
+        // ATTENTION: Called from different thread.
+        string stdoutBuffer = "";
         void GiderosRemoteControllerLogger(LogType logType, string content)
         {
             switch (logType)
@@ -366,18 +366,21 @@ namespace VSCodeDebug
                 case LogType.Info:
                     toVSCode.SendOutput("console", content);
                     break;
+
                 case LogType.PlayerOutput:
-                    if (!string.IsNullOrEmpty(lastStdoutFromGideros) &&
-                        content == "\n")
+                    // Gideros sends '\n' as seperate packet,
+                    // and VS Code adds linefeed to the end of each output message.
+                    if (content == "\n")
                     {
-                        // skip. 줄넘김이 별도 메시지로 온다.
+                        toVSCode.SendOutput("stdout", stdoutBuffer);
+                        stdoutBuffer = "";
                     }
                     else
                     {
-                        toVSCode.SendOutput("stdout", content);
+                        stdoutBuffer += content;
                     }
-                    lastStdoutFromGideros = content;
                     break;
+
                 case LogType.Warning:
                     toVSCode.SendOutput("stderr", content);
                     break;

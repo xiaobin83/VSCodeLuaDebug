@@ -22,12 +22,8 @@ end
 require 'json'
 local debuggee = require 'vscode-debuggee'
 local startResult, breakerType = debuggee.start(json)
-
-if startResult then
-	print("startResult: " .. tostring(startResult))
-	print("breakerType: " .. tostring(breakerType))
-	log("됐어, 연결됐어")
-end
+print('debuggee start ->', startResult, breakerType)
+log("됐어, 연결됐어")
 
 local timer = Timer.new(1000)
 timer:addEventListener(Event.TIMER, function()
@@ -35,6 +31,7 @@ timer:addEventListener(Event.TIMER, function()
 	print("한글!!")
 	print("왜날뷁!!")
 	print("")
+	print(1,2,3,4,5)
 	log(os.timer())
 end)
 timer:start()
