@@ -16,14 +16,14 @@ Lua Debugger 익스텐션을 사용해서 Visual Studio Code로 Lua 프로그램
 # 설정하기
 
 Lua Debugger를 가지고 루아 프로그램을 디버깅하기 위해서는
-디버깅 대상이 될 프로그램에 vscode-debugee.lua 를 넣고 작동시켜야 합니다.  
+디버깅 대상이 될 프로그램에 vscode-debuggee.lua 를 넣고 작동시켜야 합니다.  
 mobdebug를 써보셨다면 익숙하실 것입니다.
 
 
 
 ## 디버거 연결
 
-1. [vscode-debuggee.lua](https://github.com/lee-seungjae/VSCodeLuaDebug/blob/master/debugee/vscode-debuggee.lua)를 다운로드해서 프로젝트에 넣습니다.
+1. [vscode-debuggee.lua](https://github.com/lee-seungjae/VSCodeLuaDebug/blob/master/debuggee/vscode-debuggee.lua)를 다운로드해서 프로젝트에 넣습니다.
 
 2. 다음 코드를 모든 Lua 소스코드가 로드된 이후에 실행되도록 프로그램에 붙여넣으세요.
 여러분이 어떤 JSON 라이브러리를 사용하는지에 따라 코드를 적절히 수정해야 할 수 있습니다.

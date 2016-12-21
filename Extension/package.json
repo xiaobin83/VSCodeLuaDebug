@@ -100,7 +100,7 @@
                             },
                             "listenPort": {
                                 "type": "integer",
-                                "description": "Local TCP port to communicate between debug adapter and debugee",
+                                "description": "Local TCP port to communicate between debug adapter and debuggee",
                                 "default": 56789
                             },
                             "giderosPath": {
@@ -142,7 +142,7 @@
                             },
                             "listenPort": {
                                 "type": "integer",
-                                "description": "Local TCP port to communicate between debug adapter and debugee.",
+                                "description": "Local TCP port to communicate between debug adapter and debuggee.",
                                 "default": 56789
                             },
                             "encoding": {

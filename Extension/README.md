@@ -17,14 +17,14 @@ You can use the Lua Debugger extension to debug Lua programs with Visual Studio 
 
 # Configuration
 
-In order to debug Lua programs with Lua Debugger, you have to put vscode-debugee.lua in the program to be debugged.  
+In order to debug Lua programs with Lua Debugger, you have to put vscode-debuggee.lua in the program to be debugged.  
 If you have used mobdebug, you are familiar with it.
 
 
 
 ## Debugger Connection
 
-1. Download [vscode-debuggee.lua](https://github.com/lee-seungjae/VSCodeLuaDebug/blob/master/debugee/vscode-debuggee.lua) and put it in your project.
+1. Download [vscode-debuggee.lua](https://github.com/lee-seungjae/VSCodeLuaDebug/blob/master/debuggee/vscode-debuggee.lua) and put it in your project.
 
 2. Paste the following code into your program to run after all the Lua source code is loaded.  
 Depending on which JSON library you are using, you may need to modify your code accordingly.

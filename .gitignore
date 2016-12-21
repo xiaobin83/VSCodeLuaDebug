@@ -5,10 +5,10 @@
 /GiderosPlayerRemote/obj/
 /GiderosPlayerRemoteTest/bin/
 /GiderosPlayerRemoteTest/obj/
-/debugee/lua-source/Debug/
-/debugee/lua-source/Release/
-/debugee/lua-source/x64/Debug/
-/debugee/lua-source/x64/Release/
+/debuggee/lua-source/Debug/
+/debuggee/lua-source/Release/
+/debuggee/lua-source/x64/Debug/
+/debuggee/lua-source/x64/Release/
 
 Extension/*.dll
 Extension/*.exe
