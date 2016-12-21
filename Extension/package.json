@@ -1,7 +1,7 @@
 {
     "name": "lua-debug",
     "displayName": "Lua Debugger",
-    "version": "0.3.1",
+    "version": "1.0.0",
     "publisher": "devCAT",
     "icon": "images/icon.png",
     "description": "Visual Studio Code debugger extension for Lua 5.1",
@@ -20,7 +20,7 @@
     "dependencies": {},
     "repository": {
         "type": "git",
-        "url": "https://github.com/lee-seungjae/VSCodeLuaDebug.git"
+        "url": "https://github.com/devcat-studio/VSCodeLuaDebug.git"
     },
     "devDependencies": {},
     "contributes": {

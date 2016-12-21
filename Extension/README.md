@@ -24,7 +24,7 @@ If you have used mobdebug, you are familiar with it.
 
 ## Debugger Connection
 
-1. Download [vscode-debuggee.lua](https://github.com/lee-seungjae/VSCodeLuaDebug/blob/master/debuggee/vscode-debuggee.lua) and put it in your project.
+1. Download [vscode-debuggee.lua](https://github.com/devcat-studio/VSCodeLuaDebug/blob/master/debuggee/vscode-debuggee.lua) and put it in your project.
 
 2. Paste the following code into your program to run after all the Lua source code is loaded.  
 Depending on which JSON library you are using, you may need to modify your code accordingly.
@@ -91,9 +91,9 @@ This is useful if you want to see the string that the debugging target leaves on
 Basically `Vscode-debuggee.lua` drops the speed of running Lua programs because it implements the breakpoint mechanism using `debug.sethook`.  
 This performance degradation can be overcome by applying a simple patch to the Lua VM.
 
-A patch file for lua 5.1.5 is available [here](https://github.com/lee-seungjae/lua-5.1.5-op_halt/blob/master/op_halt.patch).
+A patch file for lua 5.1.5 is available [here](https://github.com/devcat-studio/lua-5.1.5-op_halt/blob/master/op_halt.patch).
 
-The result of applying this patch to lua 5.1.5 can be downloaded [here](https://github.com/lee-seungjae/lua-5.1.5-op_halt).
+The result of applying this patch to lua 5.1.5 can be downloaded [here](https://github.com/devcat-studio/lua-5.1.5-op_halt).
 
 
 
