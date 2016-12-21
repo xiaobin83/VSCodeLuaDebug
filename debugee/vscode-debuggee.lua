@@ -179,7 +179,9 @@ local function createHaltBreaker()
 				debug.clearhalt(foundChunkName)
 				for _, ln in ipairs(lines) do
 					if (debug.sethalt(foundChunkName, ln)) then
-						verifiedLines[#verifiedLines + 1] = ln
+						verifiedLines[ln] = true
+					else
+						verifiedLines[ln] = false
 					end
 				end
 			end
@@ -269,11 +271,13 @@ local function createPureBreaker()
 	return {
 		setBreakpoints = function(path, lines)
 			local t = {}
-			for _, v in ipairs(lines) do
-				t[v] = true
+			local verifiedLines = {}
+			for _, ln in ipairs(lines) do
+				t[ln] = true
+				verifiedLines[ln] = true
 			end
 			breakpointsPerPath[path] = t
-			return lines 
+			return verifiedLines
 		end,
 
 		setLineBreak = function(callback)
@@ -547,10 +551,10 @@ function handlers.setBreakpoints(req)
 		bpLines)
 
 	local breakpoints = {}
-	for i, v in ipairs(verifiedLines) do
-		breakpoints[#breakpoints + 1] = {
-			verified = true,
-			line = v
+	for i, ln in ipairs(bpLines) do
+		breakpoints[i] = {
+			verified = verifiedLines[ln],
+			line = ln
 		}
 	end
 
