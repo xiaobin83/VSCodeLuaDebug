@@ -51,7 +51,7 @@ namespace VSCodeDebug
 
             lock (debuggeeListener)
             {
-                debuggeeListener.DebuggeeHasGone();
+                debuggeeListener.DebugeeHasGone();
             }
         }
 
@@ -96,7 +96,7 @@ namespace VSCodeDebug
             {
                 lock (debuggeeListener)
                 {
-                    debuggeeListener.DebuggeeHasGone();
+                    debuggeeListener.DebugeeHasGone();
                 }
             }
         }

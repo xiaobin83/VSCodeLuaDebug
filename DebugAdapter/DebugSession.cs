@@ -24,7 +24,7 @@ namespace VSCodeDebug
     public class DebugSession : ICDPListener, IDebuggeeListener
     {
         public ICDPSender toVSCode;
-        public IDebuggeeSender toDebuggee;
+        public IDebuggeeSender toDebugee;
         private Process process;
 
         public DebugSession()
@@ -74,7 +74,7 @@ namespace VSCodeDebug
                     case "configurationDone":
                     case "evaluate":
                     case "pause":
-                        toDebuggee.Send(reqText);
+                        toDebugee.Send(reqText);
                         break;
 
                     case "source":
@@ -307,7 +307,7 @@ namespace VSCodeDebug
             }
 
             Program.WaitingUI.SetLabelText(
-                "Waiting for a debuggee at TCP " +
+                "Waiting for debugee at TCP " +
                 listener.LocalEndpoint.ToString() + "...");
 
             var clientSocket = listener.AcceptSocket(); // blocked here
@@ -317,14 +317,14 @@ namespace VSCodeDebug
                 this,
                 new NetworkStream(clientSocket),
                 encoding);
-            this.toDebuggee = ncom;
+            this.toDebugee = ncom;
 
             var welcome = new
             {
                 command = "welcome",
                 sourceBasePath = workingDirectory
             };
-            toDebuggee.Send(JsonConvert.SerializeObject(welcome));
+            toDebugee.Send(JsonConvert.SerializeObject(welcome));
 
             ncom.StartThread();
             SendResponse(command, seq, null);
@@ -352,7 +352,7 @@ namespace VSCodeDebug
             return workingDirectory;
         }
 
-        public void DebuggeeHasGone()
+        public void DebugeeHasGone()
         {
             toVSCode.SendMessage(new TerminatedEvent());
         }
