@@ -26,12 +26,12 @@ mobdebug를 써보셨다면 익숙하실 것입니다.
 1. [vscode-debuggee.lua](https://github.com/lee-seungjae/VSCodeLuaDebug/blob/master/debugee/vscode-debuggee.lua)를 다운로드해서 프로젝트에 넣습니다.
 
 2. 다음 코드를 모든 Lua 소스코드가 로드된 이후에 실행되도록 프로그램에 붙여넣으세요.
-여러분이 어떤 JSON 라이브러리를 사용하는지에 따라 코드를 적절히 수정해야 할 수 있습니다.  
-```lua
-    local json = require 'dkjson'
-    local debuggee = require 'vscode-debuggee'
-    local startResult, breakerType = debuggee.start(json)
-    print('debuggee start ->', startResult, breakerType)
+여러분이 어떤 JSON 라이브러리를 사용하는지에 따라 코드를 적절히 수정해야 할 수 있습니다.
+    ```lua
+local json = require 'dkjson'
+local debuggee = require 'vscode-debuggee'
+local startResult, breakerType = debuggee.start(json)
+print('debuggee start ->', startResult, breakerType)
 ```
 3. 디버깅할 프로그램이 있는 폴더를 Visual Studio Code에서 열고, `Ctrl-Shift-D`로 디버그 창을 열고, 디버깅 설정을 적절히 편집하세요.
 
@@ -45,20 +45,20 @@ mobdebug를 써보셨다면 익숙하실 것입니다.
 
 에러핸들링할 위치에 아래 코드를 붙여넣으세요.
 ```lua
-    xpcall(
-        function()
-            -- 실제 실행될 코드
-            local a = 1 + nil
-        end,
-        function(e)
-            if debuggee.enterDebugLoop(1, e) then
-                -- ok
-            else
-                -- 디버거가 붙어있지 않으면 여기로 진입합니다.
-                print(e)
-                print(debug.traceback())
-            end
-        end)
+xpcall(
+    function()
+        -- 실제 실행될 코드
+        local a = 1 + nil
+    end,
+    function(e)
+        if debuggee.enterDebugLoop(1, e) then
+            -- ok
+        else
+            -- 디버거가 붙어있지 않으면 여기로 진입합니다.
+            print(e)
+            print(debug.traceback())
+        end
+    end)
 ```
 
 
