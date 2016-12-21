@@ -1,41 +1,119 @@
-TOC
+# 소개
 
-- 시작하기
-- 고속 중단점 패치에 대해서
-- 에러 발생시 디버거로 진입하기
-- 폴링하기
-- vscode-debuggee 레퍼런스 매뉴얼
+Lua Debugger 익스텐션을 사용해서 Visual Studio Code로 Lua 프로그램을 디버깅할 수 있습니다.
 
 
-------------------------------------------------
+# 요구 사항
+
+- 디버깅 대상이 될 Lua 프로그램에서 `luasocket` 을 쓸 수 있어야 합니다.
+- 디버깅 대상이 될 Lua 프로그램에서 JSON 라이브러리를 쓸 수 있어야 합니다.  
+`cjson`과 `dkjson`을 권장하지만, 인터페이스가 호환되는 다른 JSON 라이브러리를 사용해도 됩니다.
+- 여러분의 코드나 서드파티 라이브러리가 `debug.sethook`을 호출하지 않아야 합니다.
+- 현재, 디버거는 Windows에서만 작동 가능합니다.
 
 
+
+# 설정하기
 
 Lua Debugger를 가지고 루아 프로그램을 디버깅하기 위해서는
-디버깅 대상이 될 프로그램에 vscode-debugee.lua 를 넣고 작동시켜야 합니다.
-mobdebug를 써보신 분이라면 익숙하실 것입니다.
-
-주의: luasocket이 필요합니다.
-
-https://raw.githubusercontent.com/lee-seungjae/VSCodeLuaDebug/master/debugee/vscode-debuggee.lua 를 다운로드해서 프로젝트에 포함시키십시오.
-
-    require 'json'
-    local startResult, breakerType = (require 'vscode-debuggee').start(json)
-    
-    if startResult then
-        print("startResult: " .. tostring(startResult))
-        print("breakerType: " .. tostring(breakerType))
-    end
-
-이런 코드를 모든 소스코드가 로드된 이후에 실행시키십시오.
-
-주의: json 테이블은 encode와 decode를 가져야 합니다.
-이 코드는 Gideros 기준이므로, Gideros 가 아닌 경우 약간 수정할 필요가 있습니다.
-
-주의: 이 코드가 실행된 이후에 로드된 코드에는 중단점을 설정할 수 없습니다.
+디버깅 대상이 될 프로그램에 vscode-debugee.lua 를 넣고 작동시켜야 합니다.  
+mobdebug를 써보셨다면 익숙하실 것입니다.
 
 
-디버거가 붙은 상태에서 실행되면 startResult가 true가 됩니다.
 
-breakerType은 OP_HALT 패치가 되어서 고속 중단점을 사용할 수 있는 상태라면 ‘halt’,
-그렇지 않은 상태라면 ‘pure’ 입니다.
+## 디버거 연결
+
+1. https://github.com/lee-seungjae/VSCodeLuaDebug/blob/master/debugee/vscode-debuggee.lua 를 다운로드해서 프로젝트에 넣습니다.
+
+2. 다음 코드를 모든 Lua 소스코드가 로드된 이후에 실행되도록 프로그램에 붙여넣으세요.
+여러분이 어떤 JSON 라이브러리를 사용하는지에 따라 코드를 적절히 수정해야 할 수 있습니다.  
+    local json = require 'dkjson'
+    local debuggee = require 'vscode-debuggee'
+    local startResult, breakerType = debuggee.start(json)
+    print('debuggee start ->', startResult, breakerType)
+
+3. 디버깅할 프로그램이 있는 폴더를 Visual Studio Code에서 열고, `Ctrl-Shift-D`로 디버그 창을 열고, 디버깅 설정을 적절히 편집하세요.
+
+4. 디버깅할 프로그램의 적절한 위치에 F9를 눌러 중단점을 설정하세요.
+
+5. `F5` 키를 눌러 디버깅을 시작합니다.
+
+
+
+## 에러가 발생했을 때 디버거로 진입하도록 설정하기
+
+에러핸들링할 위치에 아래 코드를 붙여넣으세요.
+
+    xpcall(
+        function()
+            -- 실제 실행될 코드
+            local a = 1 + nil
+        end,
+        function(e)
+            if debuggee.enterDebugLoop(1, e) then
+                -- ok
+            else
+                -- 디버거가 붙어있지 않으면 여기로 진입합니다.
+                print(e)
+                print(debug.traceback())
+            end
+        end)
+
+
+
+## 실행 도중에 디버그 명령을 처리할 수 있도록 설정하기
+
+Lua 프로그램이 작동중인 상태에서도 일시정지나 중단점 설정 등 디버거의 명령에 반응하게 하려면 아래 코드를 적절한 간격으로 호출되도록 설정하세요.
+
+게임 클라이언트라면 매 프레임마다 호출하면 됩니다.
+
+	debuggee.poll()
+
+
+# Gideros 지원
+
+Gideros Player를 Visual Studio Code에서 직접 실행할 수 있습니다.  
+디버깅 설정의 'launch-gideros' 항목을 참고하세요.
+
+
+# 리모트 디버깅 / 직접 실행
+
+디버깅 설정을 wait으로 설정하고 디버깅을 시작하면, Visual Studio Code가 디버그 대상을 실행하지 않고 접속해올 때까지 기다립니다. 디버깅 대상이 콘솔에 남기는 문자열을 확인하고 싶거나, 디버거와 디버깅 대상이 서로 다른 장비에서 실행되어야 할 때 유용합니다.
+
+
+# OP_HALT 패치
+
+`vscode-debuggee.lua`는 기본적으로 `debug.sethook`을 이용해서 중단점 기능을 구현했기 때문에 Lua 프로그램 실행 속도를 크게 떨어뜨립니다. 이런 성능 저하는 Lua VM에 간단한 패치를 적용함으로써 극복할 수 있습니다.
+
+lua 5.1.5를 위한 패치 파일을 https://github.com/lee-seungjae/lua-5.1.5-op_halt/blob/master/op_halt.patch 에서 구할 수 있습니다.
+
+lua 5.1.5에 이 패치를 적용한 결과는 https://github.com/lee-seungjae/lua-5.1.5-op_halt 에서 다운로드할 수 있습니다.
+
+
+
+# 감사의 말
+
+- `OP_HALT` 패치는 [루아 메일링 리스트에 언급된 작업](http://lua-users.org/lists/lua-l/2010-09/msg00989.html)
+에 크게 의존하고 있습니다. Dan Tull님께 감사드립니다.
+
+
+- 디버거와 디버깅 대상이 연결하는 방법에 대한 아이디어를 [`mobdebug`](https://github.com/pkulchenko/MobDebug)로부터 얻었습니다. Paul Kulchenko님께 감사드립니다.
+
+
+
+
+# vscode-debuggee.lua 레퍼런스
+
+## debuggee.start(jsonLib, config)
+디버거와 연결합니다. `jsonLib`은 `.encode`, `.decode` 함수가 포함된 JSON 라이브러리입니다.  
+`config.onError`는 `vscode-debuggee` 모듈 안에서 에러가 발생했을 때 전달받기 위한 콜백입니다.  
+`config.connectTimeout`, `config.controllerHost`, `config.controllerPort`는 리모트 디버깅을 위한 설정입니다.
+
+## debuggee.poll()
+쌓인 디버깅 명령을 처리하고 즉시 리턴합니다.
+
+## debuggee.enterDebugLoop(depth[, what])
+Lua 프로그램의 실행을 중단하고 현재 위치에서 디버깅을 시작합니다.  
+`depth`는 디버거에서 현재 실행중인 것으로 나타낼 스택의 상대적인 깊이를 지정합니다. 0으로 설정하면 `debuggee.enterDebugLoop`을 호출한 위치이며, 1로 설정하면 그보다 한 단계 얕은 위치입니다.  
+`what`은 디버깅을 시작하면서 Visual Studio Code에 전달할 메시지입니다.  
+
