@@ -51,9 +51,9 @@
     <Compile Include="CDP\Request.cs" />
     <Compile Include="CDP\Response.cs" />
     <Compile Include="CDP\VSCodeDebugProtocol.cs" />
-    <Compile Include="Debugee\IDebugeeListener.cs" />
-    <Compile Include="Debugee\IDebugeeSender.cs" />
-    <Compile Include="Debugee\DebuggeeProtocol.cs" />
+    <Compile Include="Debuggee\IDebugeeListener.cs" />
+    <Compile Include="Debuggee\IDebugeeSender.cs" />
+    <Compile Include="Debuggee\DebuggeeProtocol.cs" />
     <Compile Include="DebugSession.cs" />
     <Compile Include="Main.cs" />
     <Compile Include="MessageBox.cs" />
