@@ -1,3 +1,5 @@
+[한국어 문서 읽기](https://github.com/devcat-studio/VSCodeLuaDebug/blob/master/Extension/README_ko.md)
+
 # Introduction
 
 You can use the Lua Debugger extension to debug Lua programs with Visual Studio Code.
