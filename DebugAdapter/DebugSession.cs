@@ -18,6 +18,7 @@ using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace VSCodeDebug
 {
@@ -368,6 +369,7 @@ namespace VSCodeDebug
                     break;
 
                 case LogType.PlayerOutput:
+                    Filter(content);
                     // Gideros sends '\n' as seperate packet,
                     // and VS Code adds linefeed to the end of each output message.
                     if (content == "\n")
@@ -385,6 +387,18 @@ namespace VSCodeDebug
                     toVSCode.SendOutput("stderr", content);
                     break;
             }
+        }
+
+        protected static readonly Regex errorMatcher = new Regex(@"^([^:\n\r]+):(\d+): ");
+        void Filter(string content)
+        {
+            Match m = errorMatcher.Match(content);
+            if (!m.Success) { return; }
+
+            string file = m.Groups[1].ToString();
+            int line = int.Parse(m.Groups[2].ToString());
+
+            MessageBox.OK(file + line.ToString());
         }
     }
 }

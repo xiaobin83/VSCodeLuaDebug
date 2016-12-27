@@ -19,6 +19,9 @@ local function log(str)
 	end
 end
 
+return return
+
+
 require 'json'
 local debuggee = require 'vscode-debuggee'
 local startResult, breakerType = debuggee.start(json)
