@@ -13,6 +13,7 @@
 using GiderosPlayerRemote;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
@@ -36,11 +37,38 @@ namespace VSCodeDebug
 
         void ICDPListener.FromVSCode(string command, int seq, dynamic args, string reqText)
         {
-            MessageBox.OK(reqText);
+            //MessageBox.OK(reqText);
 
             if (args == null)
             {
                 args = new { };
+            }
+
+            if (fakeFile != null && command == "threads")
+            {
+                SendResponse(command, seq, new ThreadsResponseBody(
+                    new List<Thread>() {
+                        new Thread(999, "fake")
+                    }));
+                return;
+            }
+
+            if (fakeFile != null && command == "stackTrace")
+            {
+                SendResponse(command, seq, new StackTraceResponseBody(
+                    new List<StackFrame>() {
+                        new StackFrame(9999, "fake-st", new VSCodeDebug.Source(
+                            Path.Combine(workingDir, fakeFile)), fakeLine, 0)
+                    }));
+                return;
+            }
+
+            if (fakeFile != null && command == "scopes")
+            {
+                SendResponse(command, seq, new ScopesResponseBody(
+                    new List<Scope>()));
+                toVSCode.SendMessage(new ContinuedEvent(999, true));
+                return;
             }
 
             try
@@ -193,10 +221,6 @@ namespace VSCodeDebug
                 process.StartInfo.Arguments = arguments;
 
                 process.EnableRaisingEvents = true;
-                process.Exited += (object sender, EventArgs e) =>
-                {
-                    toVSCode.SendMessage(new TerminatedEvent());
-                };
 
                 var cmd = string.Format("{0} {1}\n", runtimeExecutable, arguments);
                 toVSCode.SendOutput("console", cmd);
@@ -349,13 +373,12 @@ namespace VSCodeDebug
                 SendErrorResponse(command, seq, 3004, "Working directory '{path}' does not exist.", new { path = workingDirectory });
                 return null;
             }
-
+            this.workingDir = workingDirectory;
             return workingDirectory;
         }
 
         public void DebugeeHasGone()
         {
-            toVSCode.SendMessage(new TerminatedEvent());
         }
 
         // ATTENTION: Called from different thread.
@@ -390,6 +413,9 @@ namespace VSCodeDebug
         }
 
         protected static readonly Regex errorMatcher = new Regex(@"^([^:\n\r]+):(\d+): ");
+        string fakeFile;
+        int fakeLine;
+        string workingDir;
         void Filter(string content)
         {
             Match m = errorMatcher.Match(content);
@@ -398,9 +424,11 @@ namespace VSCodeDebug
             string file = m.Groups[1].ToString();
             int line = int.Parse(m.Groups[2].ToString());
 
-            MessageBox.OK(file + line.ToString());
+            MessageBox.OK(content);
+            fakeFile = file;
+            fakeLine = line;
 
-            var se = new StoppedEvent(0, "error");
+            var se = new StoppedEvent(999, "error");
             toVSCode.SendMessage(se);
         }
     }

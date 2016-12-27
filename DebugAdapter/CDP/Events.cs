@@ -20,6 +20,17 @@
         { }
     }
 
+    public class ContinuedEvent : Event
+    {
+        public ContinuedEvent(int tid, bool allThreadsContinued)
+            : base("continued", new
+            {
+                threadId = tid,
+                allThreadsContinued = allThreadsContinued
+            })
+        { }
+    }
+
     public class ExitedEvent : Event
     {
         public ExitedEvent(int exCode)

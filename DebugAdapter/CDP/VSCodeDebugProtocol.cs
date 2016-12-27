@@ -123,6 +123,9 @@ namespace VSCodeDebug
 		public void SendMessage(MessageToVSCode message)
 		{
 			var data = ConvertToBytes(message);
+
+            //MessageBox.OK("> " + Encoding.UTF8.GetString(data));
+
 			try {
 				_outputStream.Write(data, 0, data.Length);
 				_outputStream.Flush();
