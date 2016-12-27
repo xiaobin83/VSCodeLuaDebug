@@ -318,7 +318,7 @@ end
 -- 센드는 블럭이어도 됨.
 local function sendMessage(msg)
 	local body = json.encode(msg)
-	--print('SENDING:  ' .. body)	
+	print('SENDING:  ' .. body)	
 	sendFully('#' .. #body .. '\n' .. body)
 end
 
@@ -345,7 +345,7 @@ local function debugLoop()
 	nextVarRef = 1
 	while true do
 		local msg = recvMessage()
-		--print('RECEIVED: ' .. json.encode(msg))
+		print('RECEIVED: ' .. json.encode(msg))
 		
 		local fn = handlers[msg.command]
 		if fn then

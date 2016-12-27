@@ -36,7 +36,7 @@ namespace VSCodeDebug
 
         void ICDPListener.FromVSCode(string command, int seq, dynamic args, string reqText)
         {
-            //MessageBox.OK(reqText);
+            MessageBox.OK(reqText);
 
             if (args == null)
             {
@@ -399,6 +399,9 @@ namespace VSCodeDebug
             int line = int.Parse(m.Groups[2].ToString());
 
             MessageBox.OK(file + line.ToString());
+
+            var se = new StoppedEvent(0, "error");
+            toVSCode.SendMessage(se);
         }
     }
 }
