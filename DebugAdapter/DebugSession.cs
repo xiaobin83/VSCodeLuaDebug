@@ -49,26 +49,35 @@ namespace VSCodeDebug
 
                 if (fakeBreakpointMode != null)
                 {
-                    if (command == "threads")
+                    if (command == "configurationDone")
+                    {
+                        SendResponse(command, seq, null);
+                    }
+                    else if (command == "threads")
                     {
                         SendResponse(command, seq, new ThreadsResponseBody(
                             new List<Thread>() { new Thread(999, "fake-thread") }));
-                        return;
                     }
-                    if (command == "stackTrace")
+                    else if (command == "stackTrace")
                     {
                         var src = new Source(Path.Combine(workingDirectory, fakeBreakpointMode.Item1));
                         var f = new StackFrame(9999, "fake-frame", src, fakeBreakpointMode.Item2, 0);
                         SendResponse(command, seq, new StackTraceResponseBody(
                             new List<StackFrame>() { f }));
-                        return;
                     }
-                    if (command == "scopes")
+                    else if (command == "scopes")
                     {
                         SendResponse(command, seq, new ScopesResponseBody(
                             new List<Scope>()));
-                        return;
+
+                        System.Threading.Thread.Sleep(1000);
+                        toVSCode.SendMessage(new TerminatedEvent());
                     }
+                    else
+                    {
+                        SendErrorResponse(command, seq, 999, "", new { });
+                    }
+                    return;
                 }
 
                 try
