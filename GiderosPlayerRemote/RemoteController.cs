@@ -22,7 +22,7 @@ namespace GiderosPlayerRemote
         NetworkStream networkStream;
         int nextSeqId = 1;
         string projectFileName;
-        Action<LogType, string> logger;
+        IRemoteControllerListener logger;
         List<KeyValuePair<string, string>> fileList = new List<KeyValuePair<string, string>>();
         Dictionary<string, KeyValuePair<DateTime, byte[]>> md5 = new Dictionary<string, KeyValuePair<DateTime, byte[]>>();
         DependencyGraph dependencyGraph = new DependencyGraph();
@@ -33,7 +33,7 @@ namespace GiderosPlayerRemote
             string addr,
             int port,
             string gprojPath,
-            Action<LogType, string> logger)
+            IRemoteControllerListener logger)
         {
             this.projectFileName = gprojPath;
             this.logger = logger;
@@ -84,7 +84,7 @@ namespace GiderosPlayerRemote
                         break;
 
                     default:
-                        logger(LogType.Warning, "unknown message:" + msgType);
+                        logger.X_Log(LogType.Warning, "unknown message:" + msgType);
                         break;
                 }
             }
@@ -92,7 +92,7 @@ namespace GiderosPlayerRemote
 
         void HandleOutput(ReceivedGiderosMessage msg)
         {
-            logger(LogType.PlayerOutput, msg.ReadString());
+            logger.X_Log(LogType.PlayerOutput, msg.ReadString());
         }
 
         void HandleFileList(ReceivedGiderosMessage msg)
@@ -135,7 +135,7 @@ namespace GiderosPlayerRemote
                     NewMessage(GiderosMessageType.DeleteFile)
                         .AppendString(iter.Key)
                         .Send();
-                    logger(LogType.Info, "delete " + iter.Key);
+                    logger.X_Log(LogType.Info, "delete " + iter.Key);
                 }
             }
 
@@ -219,7 +219,7 @@ namespace GiderosPlayerRemote
                         .AppendString(s1)
                         .AppendByteArray(bytes)
                         .Send();
-                    logger(LogType.Info, "send " + s1);
+                    logger.X_Log(LogType.Info, "send " + s1);
                 }
                 catch (FileNotFoundException)
                 {
@@ -227,7 +227,7 @@ namespace GiderosPlayerRemote
                     // 여기에선 무시한다
                 }
             }
-            logger(LogType.Info, "Uploading finished.");
+            logger.X_Log(LogType.Info, "Uploading finished.");
 
             SendProjectProperties();
 
@@ -452,7 +452,7 @@ namespace GiderosPlayerRemote
             }
             catch (FileNotFoundException)
             {
-                logger(LogType.Warning, "Fild not found: " + path);
+                logger.X_Log(LogType.Warning, "Fild not found: " + path);
                 return new byte[16];
             }
         }

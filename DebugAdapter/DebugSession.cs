@@ -21,7 +21,7 @@ using System.Text;
 
 namespace VSCodeDebug
 {
-    public class DebugSession : ICDPListener, IDebuggeeListener
+    public class DebugSession : ICDPListener, IDebuggeeListener, IRemoteControllerListener
     {
         public ICDPSender toVSCode;
         public IDebuggeeSender toDebugee;
@@ -33,7 +33,7 @@ namespace VSCodeDebug
                 "Waiting for commands from Visual Studio Code...");
         }
 
-        void ICDPListener.FromVSCode(string command, int seq, dynamic args, string reqText)
+        void ICDPListener.X_FromVSCode(string command, int seq, dynamic args, string reqText)
         {
             //MessageBox.OK(reqText);
 
@@ -94,12 +94,12 @@ namespace VSCodeDebug
             }
         }
 
-        void IDebuggeeListener.FromDebuggee(byte[] json)
+        void IDebuggeeListener.X_FromDebuggee(byte[] json)
         {
             toVSCode.SendJSONEncodedMessage(json);
         }
 
-        public void SendResponse(string command, int seq, dynamic body)
+        void SendResponse(string command, int seq, dynamic body)
         {
             var response = new Response(command, seq);
             if (body != null)
@@ -109,7 +109,7 @@ namespace VSCodeDebug
             toVSCode.SendMessage(response);
         }
 
-        public void SendErrorResponse(string command, int seq, int id, string format, dynamic arguments = null, bool user = true, bool telemetry = false)
+        void SendErrorResponse(string command, int seq, int id, string format, dynamic arguments = null, bool user = true, bool telemetry = false)
         {
             var response = new Response(command, seq);
             var msg = new Message(id, format, arguments, user, telemetry);
@@ -216,7 +216,7 @@ namespace VSCodeDebug
 
                 var connectStartedAt = DateTime.Now;
                 bool alreadyLaunched = false;
-                while (!rc.TryStart("127.0.0.1", 15000, gprojPath, GiderosRemoteControllerLogger))
+                while (!rc.TryStart("127.0.0.1", 15000, gprojPath, this))
                 {
                     if (DateTime.Now - connectStartedAt > TimeSpan.FromSeconds(10))
                     {
@@ -352,14 +352,14 @@ namespace VSCodeDebug
             return workingDirectory;
         }
 
-        public void DebugeeHasGone()
+        void IDebuggeeListener.X_DebugeeHasGone()
         {
             toVSCode.SendMessage(new TerminatedEvent());
         }
 
         // ATTENTION: Called from different thread.
         string stdoutBuffer = "";
-        void GiderosRemoteControllerLogger(LogType logType, string content)
+        void IRemoteControllerListener.X_Log(LogType logType, string content)
         {
             switch (logType)
             {

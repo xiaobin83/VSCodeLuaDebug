@@ -2,7 +2,7 @@
 {
     public interface IDebuggeeListener
     {
-        void FromDebuggee(byte[] json);
-        void DebugeeHasGone();
+        void X_FromDebuggee(byte[] json);
+        void X_DebugeeHasGone();
     }
 }

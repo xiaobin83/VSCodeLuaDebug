@@ -110,7 +110,7 @@ namespace VSCodeDebug
             {
                 lock (listener)
                 {
-                    listener.FromVSCode(request.command, request.seq, request.arguments, reqText);
+                    listener.X_FromVSCode(request.command, request.seq, request.arguments, reqText);
                 }
             }
             else
