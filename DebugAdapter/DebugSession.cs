@@ -35,68 +35,66 @@ namespace VSCodeDebug
 
         void ICDPListener.X_FromVSCode(string command, int seq, dynamic args, string reqText)
         {
-            //MessageBox.OK(reqText);
-
-            if (args == null)
+            lock (this)
             {
-                args = new { };
-            }
+                //MessageBox.OK(reqText);
 
-            try
-            {
-                switch (command)
+                if (args == null)
                 {
-                    case "initialize":
-                        Initialize(command, seq, args);
-                        break;
+                    args = new { };
+                }
 
-                    case "launch":
-                        Launch(command, seq, args);
-                        break;
+                try
+                {
+                    switch (command)
+                    {
+                        case "initialize":
+                            Initialize(command, seq, args);
+                            break;
 
-                    case "attach":
-                        Attach(command, seq, args);
-                        break;
+                        case "launch":
+                            Launch(command, seq, args);
+                            break;
 
-                    case "disconnect":
-                        Disconnect(command, seq, args);
-                        break;
+                        case "attach":
+                            Attach(command, seq, args);
+                            break;
 
-                    case "next":
-                    case "continue":
-                    case "stepIn":
-                    case "stepOut":
-                    case "stackTrace":
-                    case "scopes":
-                    case "variables":
-                    case "threads":
-                    case "setBreakpoints":
-                    case "configurationDone":
-                    case "evaluate":
-                    case "pause":
-                        toDebugee.Send(reqText);
-                        break;
+                        case "disconnect":
+                            Disconnect(command, seq, args);
+                            break;
 
-                    case "source":
-                        SendErrorResponse(command, seq, 1020, "command not supported: " + command);
-                        break;
+                        case "next":
+                        case "continue":
+                        case "stepIn":
+                        case "stepOut":
+                        case "stackTrace":
+                        case "scopes":
+                        case "variables":
+                        case "threads":
+                        case "setBreakpoints":
+                        case "configurationDone":
+                        case "evaluate":
+                        case "pause":
+                            toDebugee.Send(reqText);
+                            break;
 
-                    default:
-                        SendErrorResponse(command, seq, 1014, "unrecognized request: {_request}", new { _request = command });
-                        break;
+                        case "source":
+                            SendErrorResponse(command, seq, 1020, "command not supported: " + command);
+                            break;
+
+                        default:
+                            SendErrorResponse(command, seq, 1014, "unrecognized request: {_request}", new { _request = command });
+                            break;
+                    }
+                }
+                catch (Exception e)
+                {
+                    MessageBox.WTF(e.ToString());
+                    SendErrorResponse(command, seq, 1104, "error while processing request '{_request}' (exception: {_exception})", new { _request = command, _exception = e.Message });
+                    Environment.Exit(1);
                 }
             }
-            catch (Exception e)
-            {
-                MessageBox.WTF(e.ToString());
-                SendErrorResponse(command, seq, 1104, "error while processing request '{_request}' (exception: {_exception})", new { _request = command, _exception = e.Message });
-                Environment.Exit(1);
-            }
-        }
-
-        void IDebuggeeListener.X_FromDebuggee(byte[] json)
-        {
-            toVSCode.SendJSONEncodedMessage(json);
         }
 
         void SendResponse(string command, int seq, dynamic body)
@@ -352,38 +350,51 @@ namespace VSCodeDebug
             return workingDirectory;
         }
 
-        void IDebuggeeListener.X_DebugeeHasGone()
+        void IDebuggeeListener.X_FromDebuggee(byte[] json)
         {
-            toVSCode.SendMessage(new TerminatedEvent());
+            lock (this)
+            {
+                toVSCode.SendJSONEncodedMessage(json);
+            }
         }
 
-        // ATTENTION: Called from different thread.
-        string stdoutBuffer = "";
+        void IDebuggeeListener.X_DebugeeHasGone()
+        {
+            lock (this)
+            {
+                toVSCode.SendMessage(new TerminatedEvent());
+            }
+        }
+
+        string giderosStdoutBuffer = "";
         void IRemoteControllerListener.X_Log(LogType logType, string content)
         {
-            switch (logType)
+            lock (this)
             {
-                case LogType.Info:
-                    toVSCode.SendOutput("console", content);
-                    break;
+                switch (logType)
+                {
+                    case LogType.Info:
+                        toVSCode.SendOutput("console", content);
+                        break;
 
-                case LogType.PlayerOutput:
-                    // Gideros sends '\n' as seperate packet,
-                    // and VS Code adds linefeed to the end of each output message.
-                    if (content == "\n")
-                    {
-                        toVSCode.SendOutput("stdout", stdoutBuffer);
-                        stdoutBuffer = "";
-                    }
-                    else
-                    {
-                        stdoutBuffer += content;
-                    }
-                    break;
+                    case LogType.PlayerOutput:
+                        // Gideros sends '\n' as seperate packet,
+                        // and VS Code adds linefeed to the end of each output message.
+                        if (content == "\n")
+                        {
+                            toVSCode.SendOutput("stdout", giderosStdoutBuffer);
+                            giderosStdoutBuffer = "";
+                        }
+                        else
+                        {
+                            giderosStdoutBuffer += content;
+                        }
+                        break;
 
-                case LogType.Warning:
-                    toVSCode.SendOutput("stderr", content);
-                    break;
+                    case LogType.Warning:
+                        toVSCode.SendOutput("stderr", content);
+                        break;
+                }
             }
         }
     }

@@ -49,10 +49,7 @@ namespace VSCodeDebug
                 //Program.MessageBox(IntPtr.Zero, e.ToString(), "LuaDebug", 0);
             }
 
-            lock (debuggeeListener)
-            {
-                debuggeeListener.X_DebugeeHasGone();
-            }
+            debuggeeListener.X_DebugeeHasGone();
         }
 
         bool ProcessData()
@@ -75,10 +72,7 @@ namespace VSCodeDebug
             string body = encoding.GetString(bodyBytes);
             //MessageBox.OK(body);
 
-            lock (debuggeeListener)
-            {
-                debuggeeListener.X_FromDebuggee(bodyBytes);
-            }
+            debuggeeListener.X_FromDebuggee(bodyBytes);
             return true;
         }
 
@@ -94,10 +88,7 @@ namespace VSCodeDebug
             }
             catch (IOException)
             {
-                lock (debuggeeListener)
-                {
-                    debuggeeListener.X_DebugeeHasGone();
-                }
+                debuggeeListener.X_DebugeeHasGone();
             }
         }
     }

@@ -108,10 +108,7 @@ namespace VSCodeDebug
 			var request = JsonConvert.DeserializeObject<Request>(reqText);
 			if (request != null && request.type == "request")
             {
-                lock (listener)
-                {
-                    listener.X_FromVSCode(request.command, request.seq, request.arguments, reqText);
-                }
+                listener.X_FromVSCode(request.command, request.seq, request.arguments, reqText);
             }
             else
             {
