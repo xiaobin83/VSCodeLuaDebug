@@ -11,14 +11,15 @@ namespace VSCodeDebug
         NetworkStream networkStream;
         ByteBuffer recvBuffer = new ByteBuffer();
         Encoding encoding;
+        TcpListener tcpListener;
 
         public DebuggeeProtocol(
             IDebuggeeListener debuggeeListener,
-            NetworkStream networkStream,
+            TcpListener tcpListener,
             Encoding encoding)
         {
             this.debuggeeListener = debuggeeListener;
-            this.networkStream = networkStream;
+            this.tcpListener = tcpListener;
             this.encoding = encoding;
         }
 
@@ -31,6 +32,13 @@ namespace VSCodeDebug
         {
             try
             {
+                var clientSocket = tcpListener.AcceptSocket(); // blocked here
+                networkStream = new NetworkStream(clientSocket);
+                tcpListener.Stop();
+                tcpListener = null;
+
+                debuggeeListener.X_DebuggeeArrived(this);
+
                 while (true)
                 {
                     var buffer = new byte[10000];
@@ -49,7 +57,7 @@ namespace VSCodeDebug
                 //Program.MessageBox(IntPtr.Zero, e.ToString(), "LuaDebug", 0);
             }
 
-            debuggeeListener.X_DebugeeHasGone();
+            debuggeeListener.X_DebuggeeHasGone();
         }
 
         bool ProcessData()
@@ -88,7 +96,7 @@ namespace VSCodeDebug
             }
             catch (IOException)
             {
-                debuggeeListener.X_DebugeeHasGone();
+                debuggeeListener.X_DebuggeeHasGone();
             }
         }
     }

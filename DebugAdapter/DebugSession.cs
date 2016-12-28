@@ -13,19 +13,26 @@
 using GiderosPlayerRemote;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace VSCodeDebug
 {
     public class DebugSession : ICDPListener, IDebuggeeListener, IRemoteControllerListener
     {
         public ICDPSender toVSCode;
-        public IDebuggeeSender toDebugee;
+        public IDebuggeeSender toDebuggee;
         private Process process;
+        string giderosStdoutBuffer = "";
+        string workingDirectory;
+        Tuple<string, int> fakeBreakpointMode = null;
+        string startCommand;
+        int startSeq;
 
         public DebugSession()
         {
@@ -38,10 +45,30 @@ namespace VSCodeDebug
             lock (this)
             {
                 //MessageBox.OK(reqText);
+                if (args == null) { args = new { }; }
 
-                if (args == null)
+                if (fakeBreakpointMode != null)
                 {
-                    args = new { };
+                    if (command == "threads")
+                    {
+                        SendResponse(command, seq, new ThreadsResponseBody(
+                            new List<Thread>() { new Thread(999, "fake-thread") }));
+                        return;
+                    }
+                    if (command == "stackTrace")
+                    {
+                        var src = new Source(Path.Combine(workingDirectory, fakeBreakpointMode.Item1));
+                        var f = new StackFrame(9999, "fake-frame", src, fakeBreakpointMode.Item2, 0);
+                        SendResponse(command, seq, new StackTraceResponseBody(
+                            new List<StackFrame>() { f }));
+                        return;
+                    }
+                    if (command == "scopes")
+                    {
+                        SendResponse(command, seq, new ScopesResponseBody(
+                            new List<Scope>()));
+                        return;
+                    }
                 }
 
                 try
@@ -76,7 +103,10 @@ namespace VSCodeDebug
                         case "configurationDone":
                         case "evaluate":
                         case "pause":
-                            toDebugee.Send(reqText);
+                            if (toDebuggee != null)
+                            {
+                                toDebuggee.Send(reqText);
+                            }
                             break;
 
                         case "source":
@@ -174,8 +204,7 @@ namespace VSCodeDebug
 
                 //--------------------------------
                 // validate argument 'workingDirectory'
-                var workingDirectory = ReadWorkingDirectory(command, seq, args);
-                if (workingDirectory == null) { return; }
+                if (!ReadWorkingDirectory(command, seq, args)) { return; }
 
                 //--------------------------------
                 var arguments = (string)args.arguments;
@@ -192,7 +221,10 @@ namespace VSCodeDebug
                 process.EnableRaisingEvents = true;
                 process.Exited += (object sender, EventArgs e) =>
                 {
-                    toVSCode.SendMessage(new TerminatedEvent());
+                    lock (this)
+                    {
+                        toVSCode.SendMessage(new TerminatedEvent());
+                    }
                 };
 
                 var cmd = string.Format("{0} {1}\n", runtimeExecutable, arguments);
@@ -282,8 +314,7 @@ namespace VSCodeDebug
 
         void AcceptDebuggee(string command, int seq, dynamic args, TcpListener listener)
         {
-            var workingDirectory = ReadWorkingDirectory(command, seq, args);
-            if (workingDirectory == null) { return; }
+            if (!ReadWorkingDirectory(command, seq, args)) { return; }
 
             var encodingName = (string)args.encoding;
             Encoding encoding;
@@ -308,65 +339,74 @@ namespace VSCodeDebug
                 "Waiting for debugee at TCP " +
                 listener.LocalEndpoint.ToString() + "...");
 
-            var clientSocket = listener.AcceptSocket(); // blocked here
-            listener.Stop();
-            Program.WaitingUI.Hide();
             var ncom = new DebuggeeProtocol(
                 this,
-                new NetworkStream(clientSocket),
+                listener,
                 encoding);
-            this.toDebugee = ncom;
-
-            var welcome = new
-            {
-                command = "welcome",
-                sourceBasePath = workingDirectory
-            };
-            toDebugee.Send(JsonConvert.SerializeObject(welcome));
-
+            this.startCommand = command;
+            this.startSeq = seq;
             ncom.StartThread();
-            SendResponse(command, seq, null);
-
-            toVSCode.SendMessage(new InitializedEvent());
         }
 
-        string ReadWorkingDirectory(string command, int seq, dynamic args)
+        bool ReadWorkingDirectory(string command, int seq, dynamic args)
         {
-            var workingDirectory = (string)args.workingDirectory;
+            workingDirectory = (string)args.workingDirectory;
             if (workingDirectory == null) { workingDirectory = ""; }
 
             workingDirectory = workingDirectory.Trim();
             if (workingDirectory.Length == 0)
             {
                 SendErrorResponse(command, seq, 3003, "Property 'cwd' is empty.");
-                return null;
+                return false;
             }
             if (!Directory.Exists(workingDirectory))
             {
                 SendErrorResponse(command, seq, 3004, "Working directory '{path}' does not exist.", new { path = workingDirectory });
-                return null;
+                return false;
             }
 
-            return workingDirectory;
+            return true;
+        }
+
+        void IDebuggeeListener.X_DebuggeeArrived(IDebuggeeSender toDebuggee)
+        {
+            lock (this)
+            {
+                if (fakeBreakpointMode != null) { return; }
+                this.toDebuggee = toDebuggee;
+                Program.WaitingUI.Hide();
+                var welcome = new
+                {
+                    command = "welcome",
+                    sourceBasePath = workingDirectory
+                };
+                toDebuggee.Send(JsonConvert.SerializeObject(welcome));
+
+                SendResponse(startCommand, startSeq, null);
+                toVSCode.SendMessage(new InitializedEvent());
+                startCommand = null;
+            }
         }
 
         void IDebuggeeListener.X_FromDebuggee(byte[] json)
         {
             lock (this)
             {
+                if (fakeBreakpointMode != null) { return; }
                 toVSCode.SendJSONEncodedMessage(json);
             }
         }
 
-        void IDebuggeeListener.X_DebugeeHasGone()
+        void IDebuggeeListener.X_DebuggeeHasGone()
         {
+            System.Threading.Thread.Sleep(500);
             lock (this)
             {
+                if (fakeBreakpointMode != null) { return; }
                 toVSCode.SendMessage(new TerminatedEvent());
             }
         }
 
-        string giderosStdoutBuffer = "";
         void IRemoteControllerListener.X_Log(LogType logType, string content)
         {
             lock (this)
@@ -378,6 +418,8 @@ namespace VSCodeDebug
                         break;
 
                     case LogType.PlayerOutput:
+                        CheckGiderosOutput(content);
+
                         // Gideros sends '\n' as seperate packet,
                         // and VS Code adds linefeed to the end of each output message.
                         if (content == "\n")
@@ -396,6 +438,26 @@ namespace VSCodeDebug
                         break;
                 }
             }
+        }
+
+        protected static readonly Regex errorMatcher = new Regex(@"^([^:\n\r]+):(\d+): ");
+        void CheckGiderosOutput(string content)
+        {
+            Match m = errorMatcher.Match(content);
+            if (!m.Success) { return; }
+
+            // Entering fake breakpoint mode:
+            string file = m.Groups[1].ToString();
+            int line = int.Parse(m.Groups[2].ToString());
+            this.fakeBreakpointMode = new Tuple<string, int>(file, line);
+
+            if (startCommand != null)
+            {
+                SendResponse(startCommand, startSeq, null);
+                toVSCode.SendMessage(new InitializedEvent());
+                startCommand = null;
+            }
+            toVSCode.SendMessage(new StoppedEvent(999, "error"));
         }
     }
 }
