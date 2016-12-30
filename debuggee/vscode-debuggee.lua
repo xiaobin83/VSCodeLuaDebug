@@ -170,6 +170,14 @@ local function createHaltBreaker()
 			sethook(c)
 		end
 	end
+	local function sethalt(cname, ln)
+		for i = ln, ln + 10 do
+			if debug.sethalt(cname, i) then
+				return i
+			end
+		end
+		return nil
+	end
 	return {
 		setBreakpoints = function(path, lines)
 			local foundChunkName = findMostSimilarChunkName(path)
@@ -178,11 +186,7 @@ local function createHaltBreaker()
 			if foundChunkName then
 				debug.clearhalt(foundChunkName)
 				for _, ln in ipairs(lines) do
-					if (debug.sethalt(foundChunkName, ln)) then
-						verifiedLines[ln] = true
-					else
-						verifiedLines[ln] = false
-					end
+					verifiedLines[ln] = sethalt(foundChunkName, ln)
 				end
 			end
 
@@ -274,7 +278,7 @@ local function createPureBreaker()
 			local verifiedLines = {}
 			for _, ln in ipairs(lines) do
 				t[ln] = true
-				verifiedLines[ln] = true
+				verifiedLines[ln] = ln
 			end
 			breakpointsPerPath[path] = t
 			return verifiedLines
@@ -553,8 +557,8 @@ function handlers.setBreakpoints(req)
 	local breakpoints = {}
 	for i, ln in ipairs(bpLines) do
 		breakpoints[i] = {
-			verified = verifiedLines[ln],
-			line = ln
+			verified = (verifiedLines[ln] ~= nil),
+			line = verifiedLines[ln]
 		}
 	end
 
