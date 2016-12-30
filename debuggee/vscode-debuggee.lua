@@ -1,6 +1,6 @@
 local debuggee = {}
 
-local socket = require 'socket'
+local socket = require 'socket.core'
 local json
 local handlers = {}
 local sock
