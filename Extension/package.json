@@ -1,7 +1,7 @@
 {
     "name": "lua-debug",
     "displayName": "Lua Debugger",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "publisher": "devCAT",
     "icon": "images/icon.png",
     "description": "Visual Studio Code debugger extension for Lua 5.1",
@@ -53,6 +53,7 @@
                         "workingDirectory": "${workspaceRoot}",
                         "giderosPath": "C:/Program Files (x86)/Gideros",
                         "gprojPath": "${workspaceRoot}/GPROJ.gproj",
+                        "jumpToGiderosErrorPosition": false,
                         "listenPublicly": false,
                         "listenPort": 56789,
                         "encoding": "UTF-8"
@@ -117,6 +118,11 @@
                                 "type": "string",
                                 "description": "Encoding of the debuggee. (Example: 'UTF-8', '949')",
                                 "default": "UTF-8"
+                            },
+                            "jumpToGiderosErrorPosition": {
+                                "type": "boolean",
+                                "description": "Sets whether to jump directly to the source file if it encounters a Gideros error message.",
+                                "default": false
                             }
                         }
                     },

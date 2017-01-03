@@ -33,6 +33,7 @@ namespace VSCodeDebug
         Tuple<string, int> fakeBreakpointMode = null;
         string startCommand;
         int startSeq;
+        bool jumpToGiderosErrorPosition = false;
 
         public DebugSession()
         {
@@ -213,7 +214,7 @@ namespace VSCodeDebug
 
                 //--------------------------------
                 // validate argument 'workingDirectory'
-                if (!ReadWorkingDirectory(command, seq, args)) { return; }
+                if (!ReadBasicConfiguration(command, seq, args)) { return; }
 
                 //--------------------------------
                 var arguments = (string)args.arguments;
@@ -323,7 +324,7 @@ namespace VSCodeDebug
 
         void AcceptDebuggee(string command, int seq, dynamic args, TcpListener listener)
         {
-            if (!ReadWorkingDirectory(command, seq, args)) { return; }
+            if (!ReadBasicConfiguration(command, seq, args)) { return; }
 
             var encodingName = (string)args.encoding;
             Encoding encoding;
@@ -357,7 +358,7 @@ namespace VSCodeDebug
             ncom.StartThread();
         }
 
-        bool ReadWorkingDirectory(string command, int seq, dynamic args)
+        bool ReadBasicConfiguration(string command, int seq, dynamic args)
         {
             workingDirectory = (string)args.workingDirectory;
             if (workingDirectory == null) { workingDirectory = ""; }
@@ -372,6 +373,12 @@ namespace VSCodeDebug
             {
                 SendErrorResponse(command, seq, 3004, "Working directory '{path}' does not exist.", new { path = workingDirectory });
                 return false;
+            }
+
+            if (args.jumpToGiderosErrorPosition != null &&
+                (bool)args.jumpToGiderosErrorPosition == true)
+            {
+                jumpToGiderosErrorPosition = true;
             }
 
             return true;
@@ -427,7 +434,10 @@ namespace VSCodeDebug
                         break;
 
                     case LogType.PlayerOutput:
-                        CheckGiderosOutput(content);
+                        if (jumpToGiderosErrorPosition)
+                        {
+                            CheckGiderosOutput(content);
+                        }
 
                         // Gideros sends '\n' as seperate packet,
                         // and VS Code adds linefeed to the end of each output message.
