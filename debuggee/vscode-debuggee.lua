@@ -663,7 +663,7 @@ end
 local function registerVar(name, value, noQuote)
 	local ty = type(value)
 	local item = {
-		name = tostring(name),
+		name = (type(name) == 'number') and name or tostring(name),
 		type = ty
 	}
 
