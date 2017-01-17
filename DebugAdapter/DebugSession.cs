@@ -434,16 +434,16 @@ namespace VSCodeDebug
                         break;
 
                     case LogType.PlayerOutput:
-                        if (jumpToGiderosErrorPosition)
-                        {
-                            CheckGiderosOutput(content);
-                        }
+                        CheckGiderosOutput(content);
 
                         // Gideros sends '\n' as seperate packet,
                         // and VS Code adds linefeed to the end of each output message.
                         if (content == "\n")
                         {
-                            toVSCode.SendOutput("stdout", giderosStdoutBuffer);
+                            bool looksLikeGiderosError = errorMatcher.Match(giderosStdoutBuffer).Success;
+                            toVSCode.SendOutput(
+                                (looksLikeGiderosError ? "stderr" : "stdout"),
+                                giderosStdoutBuffer);
                             giderosStdoutBuffer = "";
                         }
                         else
@@ -465,18 +465,21 @@ namespace VSCodeDebug
             Match m = errorMatcher.Match(content);
             if (!m.Success) { return; }
 
-            // Entering fake breakpoint mode:
-            string file = m.Groups[1].ToString();
-            int line = int.Parse(m.Groups[2].ToString());
-            this.fakeBreakpointMode = new Tuple<string, int>(file, line);
-
-            if (startCommand != null)
+            if (jumpToGiderosErrorPosition)
             {
-                SendResponse(startCommand, startSeq, null);
-                toVSCode.SendMessage(new InitializedEvent());
-                startCommand = null;
+                // Entering fake breakpoint mode:
+                string file = m.Groups[1].ToString();
+                int line = int.Parse(m.Groups[2].ToString());
+                this.fakeBreakpointMode = new Tuple<string, int>(file, line);
+
+                if (startCommand != null)
+                {
+                    SendResponse(startCommand, startSeq, null);
+                    toVSCode.SendMessage(new InitializedEvent());
+                    startCommand = null;
+                }
+                toVSCode.SendMessage(new StoppedEvent(999, "error"));
             }
-            toVSCode.SendMessage(new StoppedEvent(999, "error"));
         }
     }
 }

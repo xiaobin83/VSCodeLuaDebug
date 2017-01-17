@@ -1,5 +1,8 @@
+## 1.0.5
+* Gideros error message is highlighted.
+
 ## 1.0.4
-* Now the feature to jump directly to an error message is  turned off by default. See `launch.json`.
+* Now the feature to jump directly to an error message is turned off by default. See `launch.json`.
 
 ## 1.0.3
 * Fixed a bug that caused the debug adapter to restart automatically when a Lua parse error occurred in Gideros. (bug since 1.0.2)
