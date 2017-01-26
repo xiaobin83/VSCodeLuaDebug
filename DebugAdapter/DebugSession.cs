@@ -163,7 +163,6 @@ namespace VSCodeDebug
             if (giderosRemoteController != null &&
                 stopGiderosWhenDebuggerStops)
             {
-                MessageBox.OK("Stopping");
                 giderosRemoteController.SendStop();
             }
 

@@ -1,4 +1,4 @@
-## 1.0.6
+## 1.0.7
 * Added an option: stopGiderosWhenDebuggerStops
 
 ## 1.0.5
