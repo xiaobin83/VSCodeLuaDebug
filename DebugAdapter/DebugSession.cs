@@ -27,13 +27,15 @@ namespace VSCodeDebug
     {
         public ICDPSender toVSCode;
         public IDebuggeeSender toDebuggee;
-        private Process process;
+        Process process;
+        RemoteController giderosRemoteController;
         string giderosStdoutBuffer = "";
         string workingDirectory;
         Tuple<string, int> fakeBreakpointMode = null;
         string startCommand;
         int startSeq;
         bool jumpToGiderosErrorPosition = false;
+        bool stopGiderosWhenDebuggerStops = false;
 
         public DebugSession()
         {
@@ -158,6 +160,13 @@ namespace VSCodeDebug
 
         void Disconnect(string command, int seq, dynamic arguments)
         {
+            if (giderosRemoteController != null &&
+                stopGiderosWhenDebuggerStops)
+            {
+                MessageBox.OK("Stopping");
+                giderosRemoteController.SendStop();
+            }
+
             if (process != null)
             {
                 try
@@ -252,11 +261,11 @@ namespace VSCodeDebug
             }
             else
             {
-                var rc = new RemoteController();
+                giderosRemoteController = new RemoteController();
 
                 var connectStartedAt = DateTime.Now;
                 bool alreadyLaunched = false;
-                while (!rc.TryStart("127.0.0.1", 15000, gprojPath, this))
+                while (!giderosRemoteController.TryStart("127.0.0.1", 15000, gprojPath, this))
                 {
                     if (DateTime.Now - connectStartedAt > TimeSpan.FromSeconds(10))
                     {
@@ -298,7 +307,7 @@ namespace VSCodeDebug
                     }
                 }
 
-                new System.Threading.Thread(rc.ReadLoop).Start();
+                new System.Threading.Thread(giderosRemoteController.ReadLoop).Start();
             }
 
             AcceptDebuggee(command, seq, args, listener);
@@ -379,6 +388,12 @@ namespace VSCodeDebug
                 (bool)args.jumpToGiderosErrorPosition == true)
             {
                 jumpToGiderosErrorPosition = true;
+            }
+
+            if (args.stopGiderosWhenDebuggerStops != null &&
+                (bool)args.stopGiderosWhenDebuggerStops == true)
+            {
+                stopGiderosWhenDebuggerStops = true;
             }
 
             return true;

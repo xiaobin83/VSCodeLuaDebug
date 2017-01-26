@@ -1,3 +1,6 @@
+## 1.0.6
+* Added an option: stopGiderosWhenDebuggerStops
+
 ## 1.0.5
 * Gideros error message is highlighted.
 

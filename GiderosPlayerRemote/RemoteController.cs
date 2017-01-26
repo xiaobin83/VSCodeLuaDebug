@@ -403,14 +403,19 @@ namespace GiderosPlayerRemote
 
             UpdateMD5();
 
-            NewMessage(GiderosMessageType.Stop)
-                .Send();
+            SendStop();
 
             NewMessage(GiderosMessageType.SetProjectName)
                 .AppendString(Path.GetFileNameWithoutExtension(projectFileName))
                 .Send();
 
             NewMessage(GiderosMessageType.SendFileList)
+                .Send();
+        }
+
+        public void SendStop()
+        {
+            NewMessage(GiderosMessageType.Stop)
                 .Send();
         }
 
