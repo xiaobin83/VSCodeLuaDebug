@@ -111,7 +111,8 @@ lua 5.1.5에 이 패치를 적용한 결과는 [여기](https://github.com/devca
 ## debuggee.start(jsonLib, config)
 디버거와 연결합니다. `jsonLib`은 `.encode`, `.decode` 함수가 포함된 JSON 라이브러리입니다.  
 `config.onError`는 `vscode-debuggee` 모듈 안에서 에러가 발생했을 때 전달받기 위한 콜백입니다.  
-`config.connectTimeout`, `config.controllerHost`, `config.controllerPort`는 리모트 디버깅을 위한 설정입니다.
+`config.connectTimeout`, `config.controllerHost`, `config.controllerPort`는 리모트 디버깅을 위한 설정입니다.  
+`config.redirectPrint` 를 `true`로 하면 `print` 호출을 가로채어 Visual Studio Code의 출력창에 표시합니다. Gideros를 사용할 때 중단점 직전에 호출한 `print`의 결과가 정상적으로 나오게 하려면 이 항목을 사용하십시오.
 
 ## debuggee.poll()
 쌓인 디버깅 명령을 처리하고 즉시 리턴합니다.

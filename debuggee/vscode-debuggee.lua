@@ -9,6 +9,7 @@ local storedVariables = {}
 local nextVarRef = 1
 local baseDepth
 local breaker
+local sendEvent
 
 local onError = nil
 
@@ -379,6 +380,7 @@ function debuggee.start(jsonLib, config)
 	local controllerHost = config.controllerHost or 'localhost'
 	local controllerPort = config.controllerPort or 56789
 	onError              = config.onError or defaultOnError
+	local redirectPrint  = config.redirectPrint or false
 
 	local breakerType
 	if debug.sethalt then
@@ -407,6 +409,21 @@ function debuggee.start(jsonLib, config)
 	local initMessage = recvMessage()
 	assert(initMessage.command == 'welcome')
 	sourceBasePath = initMessage.sourceBasePath
+
+	if redirectPrint then
+		_G.print = function(...)
+			local t = { ... }
+			for i, v in ipairs(t) do
+				t[i] = tostring(v)
+			end
+			sendEvent(
+				'output',
+				{
+					category = 'stdout',
+					output = table.concat(t, '\t')
+				})
+		end
+	end
 
 	debugLoop()
 	return true, breakerType
@@ -478,7 +495,7 @@ local function sendFailure(req, msg)
 end
 
 -------------------------------------------------------------------------------
-local function sendEvent(eventName, body)
+sendEvent = function(eventName, body)
 	sendMessage({
 		event = eventName,
 		type = "event",
