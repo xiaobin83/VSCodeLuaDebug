@@ -10,6 +10,7 @@ local nextVarRef = 1
 local baseDepth
 local breaker
 local sendEvent
+local debugTargetCo = nil
 
 local onError = nil
 
@@ -28,6 +29,24 @@ coroutine.create = function(f)
 	local c = cocreate(f)
 	debuggee.addCoroutine(c)
 	return c
+end
+
+-------------------------------------------------------------------------------
+local function debug_getinfo(depth, what)
+	if debugTargetCo then
+		return debug.getinfo(debugTargetCo, depth, what)
+	else
+		return debug.getinfo(depth + 1, what)
+	end
+end
+
+-------------------------------------------------------------------------------
+local function debug_getlocal(depth, i)
+	if debugTargetCo then
+		return debug.getlocal(debugTargetCo, depth, i)
+	else
+		return debug.getlocal(depth + 1, i)
+	end
 end
 
 -------------------------------------------------------------------------------
@@ -260,7 +279,7 @@ local function createPureBreaker()
 			lineBreakCallback()
 		end
 
-		local info = debug.getinfo(2, 'Sl')
+		local info = debug_getinfo(2, 'Sl')
 		if info then
 			local path = chunkNameToPath(info.source)
 			local bpSet = breakpointsPerPath[path] 
@@ -537,7 +556,7 @@ _G.__halt__ = function()
 end
 
 -------------------------------------------------------------------------------
-function debuggee.enterDebugLoop(depth, what)
+function debuggee.enterDebugLoop(depthOrCo, what)
 	if sock == nil then
 		return false
 	end
@@ -551,7 +570,13 @@ function debuggee.enterDebugLoop(depth, what)
 			})
 	end
 
-	baseDepth = (depth or 0) + breaker.stackOffset.enterDebugLoop
+	if type(depthOrCo) == 'thread' then
+		baseDepth = 1
+		debugTargetCo = depthOrCo
+	else
+		baseDepth = (depthOrCo or 0) + breaker.stackOffset.enterDebugLoop
+		debugTargetCo = nil
+	end
 	startDebugLoop()
 	return true
 end
@@ -615,7 +640,7 @@ function handlers.stackTrace(req)
 		or (9999)
 
 	for i = firstFrame, lastFrame do
-		local info = debug.getinfo(i, 'lnS')
+		local info = debug_getinfo(i, 'lnS')
 		if (info == nil) then break end
 		--print(json.encode(info))
 
@@ -716,12 +741,12 @@ function handlers.variables(req)
 		local scopeType = varRef % 1000000
 		if scopeType == scopeTypes.Locals then
 			for i = 1, 9999 do
-				local name, value = debug.getlocal(depth, i)
+				local name, value = debug_getlocal(depth, i)
 				if name == nil then break end
 				addVar(name, value)
 			end
 		elseif scopeType == scopeTypes.Upvalues then
-			local info = debug.getinfo(depth, 'f')
+			local info = debug_getinfo(depth, 'f')
 			if info and info.func then
 				for i = 1, 9999 do
 					local name, value = debug.getupvalue(info.func, i)
@@ -775,7 +800,7 @@ end
 -------------------------------------------------------------------------------
 local function stackHeight()
 	for i = 1, 9999999 do
-		if (debug.getinfo(i, '') == nil) then
+		if (debug_getinfo(i, '') == nil) then
 			return i
 		end
 	end
@@ -846,7 +871,7 @@ function handlers.evaluate(req)
 	end
 
 	if depth then
-		local info = debug.getinfo(depth, 'f')
+		local info = debug_getinfo(depth, 'f')
 		if info and info.func then
 			for i = 1, 9999 do
 				local name, value = debug.getupvalue(info.func, i)
@@ -856,7 +881,7 @@ function handlers.evaluate(req)
 		end
 
 		for i = 1, 9999 do
-			local name, value = debug.getlocal(depth, i)
+			local name, value = debug_getlocal(depth, i)
 			if name == nil then break end
 			set(name, value)
 		end
