@@ -85,6 +85,11 @@
                                 "description": "Working directory",
                                 "default": "${workspaceRoot}"
                             },
+                            "sourceBasePath": {
+                                "type": "string",
+                                "description": "Base path of lua source files",
+                                "default": "${workspaceRoot}"
+                            },
                             "executable": {
                                 "type": "string",
                                 "description": "An exe file to launch",
@@ -145,6 +150,11 @@
                             "workingDirectory": {
                                 "type": "string",
                                 "description": "Working directory",
+                                "default": "${workspaceRoot}"
+                            },
+                            "sourceBasePath": {
+                                "type": "string",
+                                "description": "Base path of lua source files",
                                 "default": "${workspaceRoot}"
                             },
                             "listenPublicly": {

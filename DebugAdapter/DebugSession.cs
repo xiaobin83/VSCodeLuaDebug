@@ -31,6 +31,7 @@ namespace VSCodeDebug
         RemoteController giderosRemoteController;
         string giderosStdoutBuffer = "";
         string workingDirectory;
+        string sourceBasePath;
         Tuple<string, int> fakeBreakpointMode = null;
         string startCommand;
         int startSeq;
@@ -63,7 +64,7 @@ namespace VSCodeDebug
                     }
                     else if (command == "stackTrace")
                     {
-                        var src = new Source(Path.Combine(workingDirectory, fakeBreakpointMode.Item1));
+                        var src = new Source(Path.Combine(sourceBasePath, fakeBreakpointMode.Item1));
                         var f = new StackFrame(9999, "fake-frame", src, fakeBreakpointMode.Item2, 0);
                         SendResponse(command, seq, new StackTraceResponseBody(
                             new List<StackFrame>() { f }));
@@ -221,7 +222,6 @@ namespace VSCodeDebug
                 }
 
                 //--------------------------------
-                // validate argument 'workingDirectory'
                 if (!ReadBasicConfiguration(command, seq, args)) { return; }
 
                 //--------------------------------
@@ -374,7 +374,7 @@ namespace VSCodeDebug
             workingDirectory = workingDirectory.Trim();
             if (workingDirectory.Length == 0)
             {
-                SendErrorResponse(command, seq, 3003, "Property 'cwd' is empty.");
+                SendErrorResponse(command, seq, 3003, "Property 'workingDirectory' is empty.");
                 return false;
             }
             if (!Directory.Exists(workingDirectory))
@@ -395,6 +395,15 @@ namespace VSCodeDebug
                 stopGiderosWhenDebuggerStops = true;
             }
 
+            if (args.sourceBasePath != null)
+            {
+                sourceBasePath = (string)args.sourceBasePath;
+            }
+            else
+            {
+                sourceBasePath = workingDirectory;
+            }
+
             return true;
         }
 
@@ -408,7 +417,7 @@ namespace VSCodeDebug
                 var welcome = new
                 {
                     command = "welcome",
-                    sourceBasePath = workingDirectory
+                    sourceBasePath = sourceBasePath
                 };
                 toDebuggee.Send(JsonConvert.SerializeObject(welcome));
 
