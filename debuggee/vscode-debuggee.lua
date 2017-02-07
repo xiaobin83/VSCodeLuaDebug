@@ -10,6 +10,7 @@ local nextVarRef = 1
 local baseDepth
 local breaker
 local sendEvent
+local dumpCommunication = false
 local debugTargetCo = nil
 
 local onError = nil
@@ -342,7 +343,20 @@ end
 -- 센드는 블럭이어도 됨.
 local function sendMessage(msg)
 	local body = json.encode(msg)
-	--print('SENDING:  ' .. body)	
+
+	if dumpCommunication then
+		local dumpMsg = {
+			event = 'output',
+			type = 'event',
+			body = {
+				category = 'console',
+				output = '[SENDING] ' .. body
+			}
+		}
+		local dumpBody = json.encode(dumpMsg)
+		sendFully('#' .. #dumpBody .. '\n' .. dumpBody)
+	end
+
 	sendFully('#' .. #body .. '\n' .. body)
 end
 
@@ -369,7 +383,17 @@ local function debugLoop()
 	nextVarRef = 1
 	while true do
 		local msg = recvMessage()
-		--print('RECEIVED: ' .. json.encode(msg))
+
+		if dumpCommunication then
+			sendMessage({
+				event = 'output',
+				type = 'event',
+				body = {
+					category = 'stderr',
+					output = '[RECEIVED] ' .. json.encode(msg)
+				}
+			})
+		end
 		
 		local fn = handlers[msg.command]
 		if fn then
