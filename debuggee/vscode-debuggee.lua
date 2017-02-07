@@ -557,7 +557,7 @@ function debuggee.enterDebugLoop(depth, what)
 end
 
 -------------------------------------------------------------------------------
--- ★★★ https://github.com/Microsoft/vscode/blob/a3e2b3d975dcaf85ca4f40486008ce52b31dbdec/src/vs/workbench/parts/debug/common/debugProtocol.d.ts
+-- ★★★ https://github.com/Microsoft/vscode/blob/master/src/vs/workbench/parts/debug/common/debugProtocol.d.ts
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
