@@ -1,7 +1,7 @@
 {
     "name": "lua-debug",
     "displayName": "Lua Debugger",
-    "version": "1.0.7",
+    "version": "1.0.8",
     "publisher": "devCAT",
     "icon": "images/icon.png",
     "description": "Visual Studio Code debugger extension for Lua 5.1",
@@ -40,6 +40,7 @@
                         "type": "lua",
                         "request": "launch",
                         "workingDirectory": "${workspaceRoot}",
+                        "sourceBasePath": "${workspaceRoot}",
                         "executable": "${workspaceRoot}/lua.exe",
                         "arguments": "main.lua",
                         "listenPublicly": false,
@@ -64,6 +65,7 @@
                         "type": "lua",
                         "request": "attach",
                         "workingDirectory": "${workspaceRoot}",
+                        "sourceBasePath": "${workspaceRoot}",
                         "listenPublicly": false,
                         "listenPort": 56789,
                         "encoding": "UTF-8"

@@ -1,3 +1,6 @@
+## 1.0.8
+* Added an option: sourceBasePath
+
 ## 1.0.7
 * Added an option: stopGiderosWhenDebuggerStops
 
