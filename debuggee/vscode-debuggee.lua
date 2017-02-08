@@ -595,7 +595,7 @@ function debuggee.enterDebugLoop(depthOrCo, what)
 	end
 
 	if type(depthOrCo) == 'thread' then
-		baseDepth = 1
+		baseDepth = 0
 		debugTargetCo = depthOrCo
 	else
 		baseDepth = (depthOrCo or 0) + breaker.stackOffset.enterDebugLoop
