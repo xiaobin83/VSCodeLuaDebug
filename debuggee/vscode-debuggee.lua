@@ -12,6 +12,7 @@ local breaker
 local sendEvent
 local dumpCommunication = false
 local debugTargetCo = nil
+local redirectedPrintFunction = nil
 
 local onError = nil
 
@@ -364,7 +365,8 @@ end
 local function recvMessage()
 	local header = sock:receive('*l')
 	if (header == nil) then
-		error('disconnected')
+		-- 디버거가 떨어진 상황
+		return nil
 	end
 	if (string.sub(header, 1, 1) ~= '#') then
 		error('헤더 이상함:' .. header)
@@ -383,29 +385,37 @@ local function debugLoop()
 	nextVarRef = 1
 	while true do
 		local msg = recvMessage()
+		if msg then
+			if dumpCommunication then
+				sendMessage({
+					event = 'output',
+					type = 'event',
+					body = {
+						category = 'stderr',
+						output = '[RECEIVED] ' .. json.encode(msg)
+					}
+				})
+			end
+			
+			local fn = handlers[msg.command]
+			if fn then
+				local rv = fn(msg)
 
-		if dumpCommunication then
-			sendMessage({
-				event = 'output',
-				type = 'event',
-				body = {
-					category = 'stderr',
-					output = '[RECEIVED] ' .. json.encode(msg)
-				}
-			})
-		end
-		
-		local fn = handlers[msg.command]
-		if fn then
-			local rv = fn(msg)
-
-			-- continue인데 break하는 게 역설적으로 느껴지지만
-			-- 디버그 루프를 탈출(break)해야 정상 실행 흐름을 계속(continue)할 수 있지..
-			if (rv == 'CONTINUE') then
-				break;
+				-- continue인데 break하는 게 역설적으로 느껴지지만
+				-- 디버그 루프를 탈출(break)해야 정상 실행 흐름을 계속(continue)할 수 있지..
+				if (rv == 'CONTINUE') then
+					break;
+				end
+			else
+				--print('UNKNOWN DEBUG COMMAND: ' .. tostring(msg.command))
 			end
 		else
-			--print('UNKNOWN DEBUG COMMAND: ' .. tostring(msg.command))
+			-- 디버그 중에 디버거가 떨어졌다.
+			-- print펑션을 리다이렉트 한경우에는 원래대로 돌려놓는다
+			if redirectedPrintFunction then			
+				_G.print = redirectedPrintFunction
+			end		
+			break
 		end
 	end
 	storedVariables = {}
@@ -450,10 +460,11 @@ function debuggee.start(jsonLib, config)
 	sock:setoption('tcp-nodelay', true)
 
 	local initMessage = recvMessage()
-	assert(initMessage.command == 'welcome')
+	assert(initMessage and initMessage.command == 'welcome')
 	sourceBasePath = initMessage.sourceBasePath
 
 	if redirectPrint then
+		redirectedPrintFunction = _G.print -- 디버거가 떨어질때를 대비해서 보관한다
 		_G.print = function(...)
 			local t = { ... }
 			for i, v in ipairs(t) do
@@ -483,19 +494,23 @@ function debuggee.poll()
 		if e == 'timeout' then break end
 
 		local msg = recvMessage()
-		--print('POLL-RECEIVED: ' .. json.encode(msg))
-		
-		if msg.command == 'pause' then
-			debuggee.enterDebugLoop(1)
-			return
-		end
+		if msg then
+			--print('POLL-RECEIVED: ' .. json.encode(msg))
+			
+			if msg.command == 'pause' then
+				debuggee.enterDebugLoop(1)
+				return
+			end
 
-		local fn = handlers[msg.command]
-		if fn then
-			local rv = fn(msg)
-			-- Ignores rv, because this loop never blocks except explicit pause command.
+			local fn = handlers[msg.command]
+			if fn then
+				local rv = fn(msg)
+				-- Ignores rv, because this loop never blocks except explicit pause command.
+			else
+				--print('POLL-UNKNOWN DEBUG COMMAND: ' .. tostring(msg.command))
+			end
 		else
-			--print('POLL-UNKNOWN DEBUG COMMAND: ' .. tostring(msg.command))
+			break
 		end
 	end
 end
