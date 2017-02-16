@@ -1,7 +1,7 @@
 {
     "name": "lua-debug",
     "displayName": "Lua Debugger",
-    "version": "1.0.3",
+    "version": "1.0.8",
     "publisher": "devCAT",
     "icon": "images/icon.png",
     "description": "Visual Studio Code debugger extension for Lua 5.1",
@@ -40,6 +40,7 @@
                         "type": "lua",
                         "request": "launch",
                         "workingDirectory": "${workspaceRoot}",
+                        "sourceBasePath": "${workspaceRoot}",
                         "executable": "${workspaceRoot}/lua.exe",
                         "arguments": "main.lua",
                         "listenPublicly": false,
@@ -53,6 +54,8 @@
                         "workingDirectory": "${workspaceRoot}",
                         "giderosPath": "C:/Program Files (x86)/Gideros",
                         "gprojPath": "${workspaceRoot}/GPROJ.gproj",
+                        "jumpToGiderosErrorPosition": false,
+                        "stopGiderosWhenDebuggerStops": true,
                         "listenPublicly": false,
                         "listenPort": 56789,
                         "encoding": "UTF-8"
@@ -62,6 +65,7 @@
                         "type": "lua",
                         "request": "attach",
                         "workingDirectory": "${workspaceRoot}",
+                        "sourceBasePath": "${workspaceRoot}",
                         "listenPublicly": false,
                         "listenPort": 56789,
                         "encoding": "UTF-8"
@@ -81,6 +85,11 @@
                             "workingDirectory": {
                                 "type": "string",
                                 "description": "Working directory",
+                                "default": "${workspaceRoot}"
+                            },
+                            "sourceBasePath": {
+                                "type": "string",
+                                "description": "Base path of lua source files",
                                 "default": "${workspaceRoot}"
                             },
                             "executable": {
@@ -117,6 +126,16 @@
                                 "type": "string",
                                 "description": "Encoding of the debuggee. (Example: 'UTF-8', '949')",
                                 "default": "UTF-8"
+                            },
+                            "jumpToGiderosErrorPosition": {
+                                "type": "boolean",
+                                "description": "Sets whether to jump directly to the source file if it encounters a Gideros error message.",
+                                "default": false
+                            },
+                            "stopGiderosWhenDebuggerStops": {
+                                "type": "boolean",
+                                "description": "Stops Gideros Player when debug adapter stops.",
+                                "default": false
                             }
                         }
                     },
@@ -133,6 +152,11 @@
                             "workingDirectory": {
                                 "type": "string",
                                 "description": "Working directory",
+                                "default": "${workspaceRoot}"
+                            },
+                            "sourceBasePath": {
+                                "type": "string",
+                                "description": "Base path of lua source files",
                                 "default": "${workspaceRoot}"
                             },
                             "listenPublicly": {

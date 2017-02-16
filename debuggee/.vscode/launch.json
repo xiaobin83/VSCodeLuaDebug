@@ -19,6 +19,7 @@
             "workingDirectory": "${workspaceRoot}",
             "giderosPath": "C:/Program Files (x86)/Gideros",
             "gprojPath": "${workspaceRoot}/gideros.gproj",
+            "stopGiderosWhenDebuggerStops": true,
             "listenPublicly": false,
             "listenPort": 56789,
             "encoding": "UTF-8"

@@ -112,6 +112,7 @@ The result of applying this patch to lua 5.1.5 can be downloaded [here](https://
 Connect with the debugger. `jsonLib` is a JSON library containing `.encode` and `.decode` functions.  
 `Config.onError` is a callback to receive when an error occurs in the` vscode-debuggee` module.  
 `Config.connectTimeout`,` config.controllerHost`, and `config.controllerPort` are settings for remote debugging.
+If `config.redirectPrint` is true, the `print` call is intercepted and displayed in the Visual Studio Code output window. Use this item if you want Gideros to print the results of a `print` called just before the breakpoint.
 
 ## debuggee.poll()
 Processes queued debugging commands and returns immediately.

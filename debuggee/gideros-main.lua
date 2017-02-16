@@ -21,7 +21,7 @@ end
 
 require 'json'
 local debuggee = require 'vscode-debuggee'
-local startResult, breakerType = debuggee.start(json)
+local startResult, breakerType = debuggee.start(json, { redirectPrint = true })
 print('debuggee start ->', startResult, breakerType)
 log("됐어, 연결됐어")
 

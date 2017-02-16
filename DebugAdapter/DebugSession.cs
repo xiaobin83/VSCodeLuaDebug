@@ -27,12 +27,16 @@ namespace VSCodeDebug
     {
         public ICDPSender toVSCode;
         public IDebuggeeSender toDebuggee;
-        private Process process;
+        Process process;
+        RemoteController giderosRemoteController;
         string giderosStdoutBuffer = "";
         string workingDirectory;
+        string sourceBasePath;
         Tuple<string, int> fakeBreakpointMode = null;
         string startCommand;
         int startSeq;
+        bool jumpToGiderosErrorPosition = false;
+        bool stopGiderosWhenDebuggerStops = false;
 
         public DebugSession()
         {
@@ -60,7 +64,7 @@ namespace VSCodeDebug
                     }
                     else if (command == "stackTrace")
                     {
-                        var src = new Source(Path.Combine(workingDirectory, fakeBreakpointMode.Item1));
+                        var src = new Source(Path.Combine(sourceBasePath, fakeBreakpointMode.Item1));
                         var f = new StackFrame(9999, "fake-frame", src, fakeBreakpointMode.Item2, 0);
                         SendResponse(command, seq, new StackTraceResponseBody(
                             new List<StackFrame>() { f }));
@@ -157,6 +161,12 @@ namespace VSCodeDebug
 
         void Disconnect(string command, int seq, dynamic arguments)
         {
+            if (giderosRemoteController != null &&
+                stopGiderosWhenDebuggerStops)
+            {
+                giderosRemoteController.SendStop();
+            }
+
             if (process != null)
             {
                 try
@@ -212,8 +222,7 @@ namespace VSCodeDebug
                 }
 
                 //--------------------------------
-                // validate argument 'workingDirectory'
-                if (!ReadWorkingDirectory(command, seq, args)) { return; }
+                if (!ReadBasicConfiguration(command, seq, args)) { return; }
 
                 //--------------------------------
                 var arguments = (string)args.arguments;
@@ -251,11 +260,11 @@ namespace VSCodeDebug
             }
             else
             {
-                var rc = new RemoteController();
+                giderosRemoteController = new RemoteController();
 
                 var connectStartedAt = DateTime.Now;
                 bool alreadyLaunched = false;
-                while (!rc.TryStart("127.0.0.1", 15000, gprojPath, this))
+                while (!giderosRemoteController.TryStart("127.0.0.1", 15000, gprojPath, this))
                 {
                     if (DateTime.Now - connectStartedAt > TimeSpan.FromSeconds(10))
                     {
@@ -297,7 +306,7 @@ namespace VSCodeDebug
                     }
                 }
 
-                new System.Threading.Thread(rc.ReadLoop).Start();
+                new System.Threading.Thread(giderosRemoteController.ReadLoop).Start();
             }
 
             AcceptDebuggee(command, seq, args, listener);
@@ -323,7 +332,7 @@ namespace VSCodeDebug
 
         void AcceptDebuggee(string command, int seq, dynamic args, TcpListener listener)
         {
-            if (!ReadWorkingDirectory(command, seq, args)) { return; }
+            if (!ReadBasicConfiguration(command, seq, args)) { return; }
 
             var encodingName = (string)args.encoding;
             Encoding encoding;
@@ -357,7 +366,7 @@ namespace VSCodeDebug
             ncom.StartThread();
         }
 
-        bool ReadWorkingDirectory(string command, int seq, dynamic args)
+        bool ReadBasicConfiguration(string command, int seq, dynamic args)
         {
             workingDirectory = (string)args.workingDirectory;
             if (workingDirectory == null) { workingDirectory = ""; }
@@ -365,13 +374,34 @@ namespace VSCodeDebug
             workingDirectory = workingDirectory.Trim();
             if (workingDirectory.Length == 0)
             {
-                SendErrorResponse(command, seq, 3003, "Property 'cwd' is empty.");
+                SendErrorResponse(command, seq, 3003, "Property 'workingDirectory' is empty.");
                 return false;
             }
             if (!Directory.Exists(workingDirectory))
             {
                 SendErrorResponse(command, seq, 3004, "Working directory '{path}' does not exist.", new { path = workingDirectory });
                 return false;
+            }
+
+            if (args.jumpToGiderosErrorPosition != null &&
+                (bool)args.jumpToGiderosErrorPosition == true)
+            {
+                jumpToGiderosErrorPosition = true;
+            }
+
+            if (args.stopGiderosWhenDebuggerStops != null &&
+                (bool)args.stopGiderosWhenDebuggerStops == true)
+            {
+                stopGiderosWhenDebuggerStops = true;
+            }
+
+            if (args.sourceBasePath != null)
+            {
+                sourceBasePath = (string)args.sourceBasePath;
+            }
+            else
+            {
+                sourceBasePath = workingDirectory;
             }
 
             return true;
@@ -387,7 +417,7 @@ namespace VSCodeDebug
                 var welcome = new
                 {
                     command = "welcome",
-                    sourceBasePath = workingDirectory
+                    sourceBasePath = sourceBasePath
                 };
                 toDebuggee.Send(JsonConvert.SerializeObject(welcome));
 
@@ -433,7 +463,10 @@ namespace VSCodeDebug
                         // and VS Code adds linefeed to the end of each output message.
                         if (content == "\n")
                         {
-                            toVSCode.SendOutput("stdout", giderosStdoutBuffer);
+                            bool looksLikeGiderosError = errorMatcher.Match(giderosStdoutBuffer).Success;
+                            toVSCode.SendOutput(
+                                (looksLikeGiderosError ? "stderr" : "stdout"),
+                                giderosStdoutBuffer);
                             giderosStdoutBuffer = "";
                         }
                         else
@@ -455,18 +488,21 @@ namespace VSCodeDebug
             Match m = errorMatcher.Match(content);
             if (!m.Success) { return; }
 
-            // Entering fake breakpoint mode:
-            string file = m.Groups[1].ToString();
-            int line = int.Parse(m.Groups[2].ToString());
-            this.fakeBreakpointMode = new Tuple<string, int>(file, line);
-
-            if (startCommand != null)
+            if (jumpToGiderosErrorPosition)
             {
-                SendResponse(startCommand, startSeq, null);
-                toVSCode.SendMessage(new InitializedEvent());
-                startCommand = null;
+                // Entering fake breakpoint mode:
+                string file = m.Groups[1].ToString();
+                int line = int.Parse(m.Groups[2].ToString());
+                this.fakeBreakpointMode = new Tuple<string, int>(file, line);
+
+                if (startCommand != null)
+                {
+                    SendResponse(startCommand, startSeq, null);
+                    toVSCode.SendMessage(new InitializedEvent());
+                    startCommand = null;
+                }
+                toVSCode.SendMessage(new StoppedEvent(999, "error"));
             }
-            toVSCode.SendMessage(new StoppedEvent(999, "error"));
         }
     }
 }
