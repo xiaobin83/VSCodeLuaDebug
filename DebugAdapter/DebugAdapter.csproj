@@ -83,7 +83,9 @@
   <PropertyGroup>
     <PostBuildEvent>copy Newtonsoft.Json.dll ..\..\..\Extension
 copy GiderosPlayerRemote.dll ..\..\..\Extension
-copy DebugAdapter.exe ..\..\..\Extension</PostBuildEvent>
+copy DebugAdapter.exe ..\..\..\Extension
+cd ..\..\..\Extension
+install.bat</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
