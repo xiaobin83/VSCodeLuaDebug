@@ -795,6 +795,7 @@ end
 function handlers.next(req)
 	stepTargetHeight = stackHeight() - breaker.stackOffset.step
 	breaker.setLineBreak(step)
+	sendSuccess(req, {})
 	return 'CONTINUE'
 end
 
@@ -802,6 +803,7 @@ end
 function handlers.stepIn(req)
 	stepTargetHeight = nil
 	breaker.setLineBreak(step)
+	sendSuccess(req, {})
 	return 'CONTINUE'
 end
 
@@ -809,6 +811,7 @@ end
 function handlers.stepOut(req)
 	stepTargetHeight = stackHeight() - (breaker.stackOffset.step + 1)
 	breaker.setLineBreak(step)
+	sendSuccess(req, {})
 	return 'CONTINUE'
 end
 
