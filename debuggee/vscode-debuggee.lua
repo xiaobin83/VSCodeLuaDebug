@@ -678,8 +678,6 @@ function handlers.stackTrace(req)
 		local prefix = string.sub(src, 1, 1) 
 		if prefix == '@' then
 			src = string.sub(src, 2) -- 앞의 '@' 떼어내기
-		elseif prefix == '=' then
-			src = '?'
 		end
 
 		local name
