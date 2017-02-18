@@ -15,13 +15,13 @@ local function b()
 	print('in function b')
 end
 
-local function a()
-	print('in function a')
+local function a(t)
+	print('in function a ' .. t.k)
 	b()
 	print('in function a 2')
 end
 
-a()
+a({k = 20})
 
 print('a')
 print('b')
