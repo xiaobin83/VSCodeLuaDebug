@@ -59,6 +59,24 @@ if not rawget(_G, 'setfenv') then -- Lua 5.2+
     return f end
 end
 
+local function valueToString(value, depth)
+	local str = ''
+	depth = depth or 0
+	local t = type(value)
+	if t == 'table' then
+		str = str .. '{\n'
+		for k, v in pairs(value) do
+			str = str .. string.rep('  ', depth + 1) .. '[' .. valueToString(k) ..']' .. ' = ' .. valueToString(v, depth + 1) .. ',\n'
+		end
+		str = str .. string.rep('  ', depth) .. '}'
+	elseif t == 'string' then
+		str = str .. '"' .. tostring(value) .. '"'
+	else
+		str = str .. tostring(value)
+	end
+	return str
+end
+
 -------------------------------------------------------------------------------
 local sethook = debug.sethook
 debug.sethook = nil
@@ -402,7 +420,7 @@ end
 local function sendMessage(msg)
 	local body = json.encode(msg)
 	if dumpCommunication then
-		logToDebugConsole('[SENDING] ----\n' .. valueToString(msg) .. '\n----[/SENDING]')
+		logToDebugConsole('[SENDING] ' .. valueToString(msg))
 	end
 	sendFully('#' .. #body .. '\n' .. body)
 end
@@ -433,7 +451,7 @@ local function debugLoop()
 		local msg = recvMessage()
 		if msg then
 			if dumpCommunication then
-				logToDebugConsole('[RECEIVED] ----\n' .. valueToString(msg) .. '\n----[/RECEIVED]', 'stderr')
+				logToDebugConsole('[RECEIVED] ' .. valueToString(msg), 'stderr')
 			end
 			
 			local fn = handlers[msg.command]
@@ -474,7 +492,10 @@ function debuggee.start(jsonLib, config)
 	onError              = config.onError or defaultOnError
 	local redirectPrint  = config.redirectPrint or false
 	dumpCommunication    = config.dumpCommunication or false
-	
+	if not config.luaStyleLog then
+		valueToString = function(value) return json.encode(value) end
+	end
+
 	local breakerType
 	if debug.sethalt then
 		breaker = createHaltBreaker()
@@ -537,7 +558,7 @@ function debuggee.poll()
 
 		if msg then
 			if dumpCommunication then
-				logToDebugConsole('[POLL-RECEIVED] ----\n' .. valueToString(msg) .. '\n----[/POLL-RECEIVED]', 'stderr')
+				logToDebugConsole('[POLL-RECEIVED] ' .. valueToString(msg), 'stderr')
 			end
 			
 			if msg.command == 'pause' then
