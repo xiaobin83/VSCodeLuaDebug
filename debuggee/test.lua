@@ -8,7 +8,7 @@ local function onError(e)
 end
 
 local debuggee = (require 'vscode-debuggee')
-local startResult, breakerType = debuggee.start(json, { onError = onError })
+local startResult, breakerType = debuggee.start(json, { onError = onError, dumpCommunication = true, luaStyleLog = true })
 print('debuggee.start(): ', tostring(startResult), breakerType)
 
 local function b()

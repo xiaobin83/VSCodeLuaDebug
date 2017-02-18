@@ -22,6 +22,24 @@ local function defaultOnError(e)
 	print('****************************************************')
 end
 
+local function valueToString(value, depth)
+	local str = ''
+	depth = depth or 0
+	local t = type(value)
+	if t == 'table' then
+		str = str .. '{\n'
+		for k, v in pairs(value) do
+			str = str .. string.rep('  ', depth + 1) .. '[' .. valueToString(k) ..']' .. ' = ' .. valueToString(v, depth + 1) .. ',\n'
+		end
+		str = str .. string.rep('  ', depth) .. '}'
+	elseif t == 'string' then
+		str = str .. '"' .. tostring(value) .. '"'
+	else
+		str = str .. tostring(value)
+	end
+	return str
+end
+
 -------------------------------------------------------------------------------
 local sethook = debug.sethook
 debug.sethook = nil
@@ -161,6 +179,34 @@ end
 local coroutineSet = {}
 setmetatable(coroutineSet, { __mode = 'v' })
 
+-------------------------------------------------------------------------------
+-- 네트워크 유틸리티 {{{
+local function sendFully(str)
+	local first = 1
+	while first <= #str do
+		local sent = sock:send(str, first)
+		if sent and sent > 0 then
+			first = first + sent;
+		else
+			error('sock:send() returned < 0')
+		end
+	end
+end
+
+-- send log to debug console
+local function logToDebugConsole(output, category)
+	local dumpMsg = {
+		event = 'output',
+		type = 'event',
+		body = {
+			category = category or 'console',
+			output = output
+		}
+	}
+	local dumpBody = json.encode(dumpMsg)
+	sendFully('#' .. #dumpBody .. '\n' .. dumpBody)
+end
+
 -- 순정 모드 {{{
 local function createHaltBreaker()
 	-- chunkname 매칭 {
@@ -284,7 +330,10 @@ local function createPureBreaker()
 		local info = debug_getinfo(2, 'Sl')
 		if info then
 			local path = chunkNameToPath(info.source)
-			local bpSet = breakpointsPerPath[path] 
+			if path then
+				path = string.lower(path)
+			end
+			local bpSet = breakpointsPerPath[path]
 			if bpSet and bpSet[info.currentline] then
 				_G.__halt__()
 			end
@@ -301,6 +350,9 @@ local function createPureBreaker()
 			for _, ln in ipairs(lines) do
 				t[ln] = true
 				verifiedLines[ln] = ln
+			end
+			if path then
+				path = string.lower(path)
 			end
 			breakpointsPerPath[path] = t
 			return verifiedLines
@@ -327,35 +379,13 @@ end
 
 -- 순정 모드 }}}
 
--------------------------------------------------------------------------------
--- 네트워크 유틸리티 {{{
-local function sendFully(str)
-	local first = 1
-	while first <= #str do
-		local sent = sock:send(str, first)
-		if sent and sent > 0 then
-			first = first + sent;
-		else
-			error('sock:send() returned < 0')
-		end
-	end
-end
 
 -- 센드는 블럭이어도 됨.
 local function sendMessage(msg)
 	local body = json.encode(msg)
 
 	if dumpCommunication then
-		local dumpMsg = {
-			event = 'output',
-			type = 'event',
-			body = {
-				category = 'console',
-				output = '[SENDING] ' .. body
-			}
-		}
-		local dumpBody = json.encode(dumpMsg)
-		sendFully('#' .. #dumpBody .. '\n' .. dumpBody)
+		logToDebugConsole('[SENDING] ' .. valueToString(msg))
 	end
 
 	sendFully('#' .. #body .. '\n' .. body)
@@ -387,14 +417,7 @@ local function debugLoop()
 		local msg = recvMessage()
 		if msg then
 			if dumpCommunication then
-				sendMessage({
-					event = 'output',
-					type = 'event',
-					body = {
-						category = 'stderr',
-						output = '[RECEIVED] ' .. json.encode(msg)
-					}
-				})
+				logToDebugConsole('[RECEIVED] ' .. valueToString(msg), 'stderr')
 			end
 			
 			local fn = handlers[msg.command]
@@ -434,6 +457,10 @@ function debuggee.start(jsonLib, config)
 	local controllerPort = config.controllerPort or 56789
 	onError              = config.onError or defaultOnError
 	local redirectPrint  = config.redirectPrint or false
+	dumpCommunication    = config.dumpCommunication or false
+	if not config.luaStyleLog then
+		valueToString = function(value) return json.encode(value) end
+	end
 
 	local breakerType
 	if debug.sethalt then
@@ -495,7 +522,9 @@ function debuggee.poll()
 
 		local msg = recvMessage()
 		if msg then
-			--print('POLL-RECEIVED: ' .. json.encode(msg))
+			if dumpCommunication then
+				logToDebugConsole('[POLL-RECEIVED] ' .. valueToString(msg), 'stderr')
+			end
 			
 			if msg.command == 'pause' then
 				debuggee.enterDebugLoop(1)
