@@ -59,24 +59,6 @@ if not rawget(_G, 'setfenv') then -- Lua 5.2+
     return f end
 end
 
-local function valueToString(value, depth)
-	local str = ''
-	depth = depth or 0
-	local t = type(value)
-	if t == 'table' then
-		str = str .. '{\n'
-		for k, v in pairs(value) do
-			str = str .. string.rep('  ', depth + 1) .. '[' .. valueToString(k) ..']' .. ' = ' .. valueToString(v, depth + 1) .. ',\n'
-		end
-		str = str .. string.rep('  ', depth) .. '}'
-	elseif t == 'string' then
-		str = str .. '"' .. tostring(value) .. '"'
-	else
-		str = str .. tostring(value)
-	end
-	return str
-end
-
 -------------------------------------------------------------------------------
 local sethook = debug.sethook
 debug.sethook = nil
