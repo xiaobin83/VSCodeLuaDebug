@@ -20,7 +20,25 @@ local function defaultOnError(e)
 end
 
 
-if not setfenv then -- Lua 5.2+
+local function valueToString(value, depth)
+	local str = ''
+	depth = depth or 0
+	local t = type(value)
+	if t == 'table' then
+		str = str .. '{\n'
+		for k, v in pairs(value) do
+			str = str .. string.rep('  ', depth + 1) .. '[' .. valueToString(k) ..']' .. ' = ' .. valueToString(v, depth + 1) .. ',\n'
+		end
+		str = str .. string.rep('  ', depth) .. '}'
+	elseif t == 'string' then
+		str = str .. '"' .. tostring(value) .. '"'
+	else
+		str = str .. tostring(value)
+	end
+	return str
+end
+
+if not rawget(_G, 'setfenv') then -- Lua 5.2+
   -- based on http://lua-users.org/lists/lua-l/2010-06/msg00314.html
   -- this assumes f is a function
   local function findenv(f)
@@ -38,6 +56,14 @@ if not setfenv then -- Lua 5.2+
     return f end
 end
 
+-------------------------------------------------------------------------------
+local function stackHeight()
+	for i = 1, 9999999 do
+		if (debug.getinfo(i, '') == nil) then
+			return i
+		end
+	end
+end
 
 -------------------------------------------------------------------------------
 local sethook = debug.sethook
@@ -163,6 +189,9 @@ setmetatable(coroutineSet, { __mode = 'v' })
 -- 순정 모드 {{{
 local function createHaltBreaker()
 	-- chunkname 매칭 {
+	-- print('createHaltBreaker')
+	-- print('debug.getchunknames = ' .. tostring(debug.getchunknames))
+	-- print('debug.getchunknames() = ' .. valueToString(debug.getchunknames()))
 	local loadedChunkNameMap = {}
 	for chunkname, _ in pairs(debug.getchunknames()) do
 		loadedChunkNameMap[chunkname] = splitChunkName(chunkname)
@@ -243,6 +272,8 @@ local function createHaltBreaker()
 end
 
 local function createPureBreaker()
+	print('createPureBreaker')
+
 	local lineBreakCallback = nil
 	local breakpointsPerPath = {}
 	local chunknameToPathCache = {}
@@ -271,10 +302,18 @@ local function createPureBreaker()
 		return foundPath
 	end
 
+	local stackOffset = {}
+
 	local entered = false
 	local function hookfunc()
 		if entered then return false end
 		entered = true
+
+		local lineHookHeight = stackHeight()
+		stackOffset.halt = lineHookHeight + 1
+		stackOffset.enterDebugLoop = stackOffset.halt + 1
+		stackOffset.step = lineHookHeight + 1
+		stackOffset.stepDebugLoop = stackOffset.step + 1
 
 		if lineBreakCallback then
 			lineBreakCallback()
@@ -314,13 +353,15 @@ local function createPureBreaker()
 		end,
 
 		-- 실험적으로 알아낸 값들-_-ㅅㅂ
-		stackOffset =
+		stackOffset = stackOffset
+--[[
 		{
 			enterDebugLoop = 6,
 			halt = 7,
 			step = 4,
 			stepDebugLoop = 7
 		}
+--]]
 	}
 end
 
@@ -343,8 +384,8 @@ end
 -- 센드는 블럭이어도 됨.
 local function sendMessage(msg)
 	local body = json.encode(msg)
-	--print('SENDING:  ' .. body)	
 	sendFully('#' .. #body .. '\n' .. body)
+	print('SENDING:  ' .. valueToString(msg))
 end
 
 -- 리시브는 블럭이 아니어야 할 거 같은데... 음... 블럭이어도 괜찮나?
@@ -371,6 +412,7 @@ local function debugLoop()
 	while true do
 		local msg = recvMessage()
 		--print('RECEIVED: ' .. json.encode(msg))
+		print('RECEIVED: ' .. valueToString(msg))
 		
 		local fn = handlers[msg.command]
 		if fn then
@@ -552,7 +594,7 @@ end
 
 -------------------------------------------------------------------------------
 _G.__halt__ = function()
-	baseDepth = breaker.stackOffset.halt
+	baseDepth = breaker.stackOffset.enterDebugLoop
 	startDebugLoop()
 end
 
@@ -637,11 +679,14 @@ function handlers.stackTrace(req)
 	for i = firstFrame, lastFrame do
 		local info = debug.getinfo(i, 'lnS')
 		if (info == nil) then break end
-		--print(json.encode(info))
+		print('stack frame: ' .. valueToString(info))
 
 		local src = info.source
-		if string.sub(src, 1, 1) == '@' then
+		local prefix = string.sub(src, 1, 1) 
+		if prefix == '@' then
 			src = string.sub(src, 2) -- 앞의 '@' 떼어내기
+		elseif prefix == '=' then
+			src = ''
 		end
 
 		local name
@@ -793,15 +838,6 @@ function handlers.continue(req)
 end
 
 -------------------------------------------------------------------------------
-local function stackHeight()
-	for i = 1, 9999999 do
-		if (debug.getinfo(i, '') == nil) then
-			return i
-		end
-	end
-end
-
--------------------------------------------------------------------------------
 local stepTargetHeight = nil
 local function step()
 	if (stepTargetHeight == nil) or (stackHeight() <= stepTargetHeight) then
@@ -813,8 +849,9 @@ end
 
 -------------------------------------------------------------------------------
 function handlers.next(req)
-	stepTargetHeight = stackHeight() - breaker.stackOffset.step
+	stepTargetHeight = breaker.stackOffset.step
 	breaker.setLineBreak(step)
+	sendSuccess(req, {})
 	return 'CONTINUE'
 end
 

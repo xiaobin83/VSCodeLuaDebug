@@ -6,8 +6,9 @@
             "type": "lua",
             "request": "launch",
             "workingDirectory": "${workspaceRoot}",
-            "executable": "${workspaceRoot}/lua.exe",
-            "arguments": "main.lua",
+            // "executable": "${workspaceRoot}/lua-5.1.5.exe",
+            "executable": "${workspaceRoot}/bin/x86/lua.exe",
+            "arguments": "test.lua",
             "listenPublicly": false,
             "listenPort": 56789,
             "encoding": "UTF-8"
