@@ -741,7 +741,7 @@ function handlers.scopes(req)
 end
 
 -------------------------------------------------------------------------------
-local function registerVar(name_, value, noQuote, index)
+local function registerVar(varNameCount, name_, value, noQuote)
 	local ty = type(value)
 	local name
 	if type(name_) == 'number' then
@@ -749,8 +749,11 @@ local function registerVar(name_, value, noQuote, index)
 	else
 		name = tostring(name_)
 	end
-	if index then
-		name = name .. ' /' .. index
+	if varNameCount[name] then
+		varNameCount[name] = varNameCount[name] + 1
+		name = name .. ' (' .. varNameCount[name] .. ')'
+	else
+		varNameCount[name] = 1
 	end
 	
 	local item = {
@@ -780,19 +783,20 @@ end
 function handlers.variables(req)
 	local varRef = req.arguments.variablesReference
 	local variables = {}
-	local function addVar(name, value, noQuote, index)
-		variables[#variables + 1] = registerVar(name, value, noQuote, index) 
+	local varNameCount = {}
+	local function addVar(name, value, noQuote)
+		variables[#variables + 1] = registerVar(varNameCount, name, value, noQuote)
 	end
 
 	if (varRef >= 1000000) then
-		-- 스코프임.
+		-- Scope.
 		local depth = math.floor(varRef / 1000000)
 		local scopeType = varRef % 1000000
 		if scopeType == scopeTypes.Locals then
 			for i = 1, 9999 do
 				local name, value = debug_getlocal(depth, i)
 				if name == nil then break end
-				addVar(name, value, nil, i)
+				addVar(name, value, nil)
 			end
 		elseif scopeType == scopeTypes.Upvalues then
 			local info = debug_getinfo(depth, 'f')
@@ -800,7 +804,7 @@ function handlers.variables(req)
 				for i = 1, 9999 do
 					local name, value = debug.getupvalue(info.func, i)
 					if name == nil then break end
-					addVar(name, value, nil, i)
+					addVar(name, value, nil)
 				end
 			end
 		elseif scopeType == scopeTypes.Globals then
@@ -810,13 +814,27 @@ function handlers.variables(req)
 			table.sort(variables, function(a, b) return a.name < b.name end)
 		end 
 	else
-		-- 펼치기임.
+		-- Expansion.
 		local var = storedVariables[varRef]
 		if type(var) == 'table' then
 			for k, v in pairs(var) do
 				addVar(k, v)
 			end
-			table.sort(variables, function(a, b) return a.name < b.name end)
+			table.sort(variables, function(a, b)
+				local aNum, aMatched = string.gsub(a.name, '^%[(%d+)%]$', '%1')
+				local bNum, bMatched = string.gsub(b.name, '^%[(%d+)%]$', '%1')
+
+				if (aMatched == 1) and (bMatched == 1) then
+					-- both are numbers. compare numerically.
+					return tonumber(aNum) < tonumber(bNum)
+				elseif aMatched == bMatched then
+					-- both are strings. compare alphabetically.
+					return a.name < b.name
+				else
+					-- string comes first.
+					return aMatched < bMatched
+				end
+			end)
 		elseif type(var) == 'function' then
 			local info = debug.getinfo(var, 'S')
 			addVar('(source)', tostring(info.short_src), true)
@@ -956,7 +974,8 @@ function handlers.evaluate(req)
 		return
 	end
 
-	local item = registerVar('', aux)
+	local varNameCount = {}
+	local item = registerVar(varNameCount, '', aux)
 
 	sendSuccess(req, {
 		result = item.value,
