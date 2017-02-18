@@ -18,7 +18,7 @@ local c = coroutine.create(function()
 		if i > 0 then
 			return r(i - 1) + 1
 		else
-			error('코루틴 중 에러내봄')
+			return nil + nil -- error in coroutine
 		end
 	end
 	r(10)	
@@ -55,7 +55,7 @@ end
 
 xpcall(
 	function()
-		local a = 1 + nil
+		local a = 1 + nil -- error in xpcall
 	end,
 	function(e)
 		if debuggee.enterDebugLoop(1, e) then
@@ -66,6 +66,13 @@ xpcall(
 			print(debug.traceback())
 		end
 	end)
+
+local q = 1
+local q = 2
+local q = 3
+local q = 4
+local arr = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}
+arr.a = 'aaa'
 
 a()
 print('-')
