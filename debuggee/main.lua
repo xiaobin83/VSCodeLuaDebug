@@ -14,12 +14,19 @@ print('debuggee.start(): ', tostring(startResult), breakerType)
 local json = require 'dkjson'
 
 local c = coroutine.create(function()
-	local a = 'aaaa'
-	print('in coroutine a')
-	print('in coroutine b')
+	local function r(i)
+		if i > 0 then
+			return r(i - 1) + 1
+		else
+			error('코루틴 중 에러내봄')
+		end
+	end
+	r(10)	
 end)
-coroutine.resume(c)
-
+local coSuccess, coErrorMessage = coroutine.resume(c)
+if not coSuccess then
+	debuggee.enterDebugLoop(c, coErrorMessage)
+end
 
 
 local function d()

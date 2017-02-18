@@ -8,7 +8,7 @@ local function onError(e)
 end
 
 local debuggee = (require 'vscode-debuggee')
-local startResult, breakerType = debuggee.start(json, { onError = onError, redirectPrint = false })
+local startResult, breakerType = debuggee.start(json, { onError = onError, dumpCommunication = false })
 print('debuggee.start(): ', tostring(startResult), breakerType)
 
 local function b()
@@ -21,15 +21,5 @@ local function a(t, ...)
 	print('in function a 2')
 end
 
-a({k = 20}, 10, 30)
-
-print('a')
-print('b')
-print('c')
-print('d')
-
-print('a')
-print('b')
-print('c')
-print('d')
-
+a({k = 10}, 20, 30)
+print('in test')
