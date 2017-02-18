@@ -10,6 +10,9 @@ local nextVarRef = 1
 local baseDepth
 local breaker
 local sendEvent
+local dumpCommunication = false
+local debugTargetCo = nil
+local redirectedPrintFunction = nil
 
 local onError = nil
 
@@ -28,6 +31,24 @@ coroutine.create = function(f)
 	local c = cocreate(f)
 	debuggee.addCoroutine(c)
 	return c
+end
+
+-------------------------------------------------------------------------------
+local function debug_getinfo(depth, what)
+	if debugTargetCo then
+		return debug.getinfo(debugTargetCo, depth, what)
+	else
+		return debug.getinfo(depth + 1, what)
+	end
+end
+
+-------------------------------------------------------------------------------
+local function debug_getlocal(depth, i)
+	if debugTargetCo then
+		return debug.getlocal(debugTargetCo, depth, i)
+	else
+		return debug.getlocal(depth + 1, i)
+	end
 end
 
 -------------------------------------------------------------------------------
@@ -260,7 +281,7 @@ local function createPureBreaker()
 			lineBreakCallback()
 		end
 
-		local info = debug.getinfo(2, 'Sl')
+		local info = debug_getinfo(2, 'Sl')
 		if info then
 			local path = chunkNameToPath(info.source)
 			local bpSet = breakpointsPerPath[path] 
@@ -323,7 +344,20 @@ end
 -- 센드는 블럭이어도 됨.
 local function sendMessage(msg)
 	local body = json.encode(msg)
-	--print('SENDING:  ' .. body)	
+
+	if dumpCommunication then
+		local dumpMsg = {
+			event = 'output',
+			type = 'event',
+			body = {
+				category = 'console',
+				output = '[SENDING] ' .. body
+			}
+		}
+		local dumpBody = json.encode(dumpMsg)
+		sendFully('#' .. #dumpBody .. '\n' .. dumpBody)
+	end
+
 	sendFully('#' .. #body .. '\n' .. body)
 end
 
@@ -331,7 +365,8 @@ end
 local function recvMessage()
 	local header = sock:receive('*l')
 	if (header == nil) then
-		error('disconnected')
+		-- 디버거가 떨어진 상황
+		return nil
 	end
 	if (string.sub(header, 1, 1) ~= '#') then
 		error('헤더 이상함:' .. header)
@@ -350,19 +385,37 @@ local function debugLoop()
 	nextVarRef = 1
 	while true do
 		local msg = recvMessage()
-		--print('RECEIVED: ' .. json.encode(msg))
-		
-		local fn = handlers[msg.command]
-		if fn then
-			local rv = fn(msg)
+		if msg then
+			if dumpCommunication then
+				sendMessage({
+					event = 'output',
+					type = 'event',
+					body = {
+						category = 'stderr',
+						output = '[RECEIVED] ' .. json.encode(msg)
+					}
+				})
+			end
+			
+			local fn = handlers[msg.command]
+			if fn then
+				local rv = fn(msg)
 
-			-- continue인데 break하는 게 역설적으로 느껴지지만
-			-- 디버그 루프를 탈출(break)해야 정상 실행 흐름을 계속(continue)할 수 있지..
-			if (rv == 'CONTINUE') then
-				break;
+				-- continue인데 break하는 게 역설적으로 느껴지지만
+				-- 디버그 루프를 탈출(break)해야 정상 실행 흐름을 계속(continue)할 수 있지..
+				if (rv == 'CONTINUE') then
+					break;
+				end
+			else
+				--print('UNKNOWN DEBUG COMMAND: ' .. tostring(msg.command))
 			end
 		else
-			--print('UNKNOWN DEBUG COMMAND: ' .. tostring(msg.command))
+			-- 디버그 중에 디버거가 떨어졌다.
+			-- print펑션을 리다이렉트 한경우에는 원래대로 돌려놓는다
+			if redirectedPrintFunction then			
+				_G.print = redirectedPrintFunction
+			end		
+			break
 		end
 	end
 	storedVariables = {}
@@ -407,10 +460,11 @@ function debuggee.start(jsonLib, config)
 	sock:setoption('tcp-nodelay', true)
 
 	local initMessage = recvMessage()
-	assert(initMessage.command == 'welcome')
+	assert(initMessage and initMessage.command == 'welcome')
 	sourceBasePath = initMessage.sourceBasePath
 
 	if redirectPrint then
+		redirectedPrintFunction = _G.print -- 디버거가 떨어질때를 대비해서 보관한다
 		_G.print = function(...)
 			local t = { ... }
 			for i, v in ipairs(t) do
@@ -440,19 +494,23 @@ function debuggee.poll()
 		if e == 'timeout' then break end
 
 		local msg = recvMessage()
-		--print('POLL-RECEIVED: ' .. json.encode(msg))
-		
-		if msg.command == 'pause' then
-			debuggee.enterDebugLoop(1)
-			return
-		end
+		if msg then
+			--print('POLL-RECEIVED: ' .. json.encode(msg))
+			
+			if msg.command == 'pause' then
+				debuggee.enterDebugLoop(1)
+				return
+			end
 
-		local fn = handlers[msg.command]
-		if fn then
-			local rv = fn(msg)
-			-- Ignores rv, because this loop never blocks except explicit pause command.
+			local fn = handlers[msg.command]
+			if fn then
+				local rv = fn(msg)
+				-- Ignores rv, because this loop never blocks except explicit pause command.
+			else
+				--print('POLL-UNKNOWN DEBUG COMMAND: ' .. tostring(msg.command))
+			end
 		else
-			--print('POLL-UNKNOWN DEBUG COMMAND: ' .. tostring(msg.command))
+			break
 		end
 	end
 end
@@ -537,7 +595,7 @@ _G.__halt__ = function()
 end
 
 -------------------------------------------------------------------------------
-function debuggee.enterDebugLoop(depth, what)
+function debuggee.enterDebugLoop(depthOrCo, what)
 	if sock == nil then
 		return false
 	end
@@ -551,7 +609,13 @@ function debuggee.enterDebugLoop(depth, what)
 			})
 	end
 
-	baseDepth = (depth or 0) + breaker.stackOffset.enterDebugLoop
+	if type(depthOrCo) == 'thread' then
+		baseDepth = 0
+		debugTargetCo = depthOrCo
+	else
+		baseDepth = (depthOrCo or 0) + breaker.stackOffset.enterDebugLoop
+		debugTargetCo = nil
+	end
 	startDebugLoop()
 	return true
 end
@@ -615,7 +679,7 @@ function handlers.stackTrace(req)
 		or (9999)
 
 	for i = firstFrame, lastFrame do
-		local info = debug.getinfo(i, 'lnS')
+		local info = debug_getinfo(i, 'lnS')
 		if (info == nil) then break end
 		--print(json.encode(info))
 
@@ -726,12 +790,12 @@ function handlers.variables(req)
 		local scopeType = varRef % 1000000
 		if scopeType == scopeTypes.Locals then
 			for i = 1, 9999 do
-				local name, value = debug.getlocal(depth, i)
+				local name, value = debug_getlocal(depth, i)
 				if name == nil then break end
 				addVar(name, value, nil, i)
 			end
 		elseif scopeType == scopeTypes.Upvalues then
-			local info = debug.getinfo(depth, 'f')
+			local info = debug_getinfo(depth, 'f')
 			if info and info.func then
 				for i = 1, 9999 do
 					local name, value = debug.getupvalue(info.func, i)
@@ -785,7 +849,7 @@ end
 -------------------------------------------------------------------------------
 local function stackHeight()
 	for i = 1, 9999999 do
-		if (debug.getinfo(i, '') == nil) then
+		if (debug_getinfo(i, '') == nil) then
 			return i
 		end
 	end
@@ -859,7 +923,7 @@ function handlers.evaluate(req)
 	end
 
 	if depth then
-		local info = debug.getinfo(depth, 'f')
+		local info = debug_getinfo(depth, 'f')
 		if info and info.func then
 			for i = 1, 9999 do
 				local name, value = debug.getupvalue(info.func, i)
@@ -869,7 +933,7 @@ function handlers.evaluate(req)
 		end
 
 		for i = 1, 9999 do
-			local name, value = debug.getlocal(depth, i)
+			local name, value = debug_getlocal(depth, i)
 			if name == nil then break end
 			set(name, value)
 		end
