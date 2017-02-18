@@ -312,7 +312,7 @@ local function sendFully(str)
 	local first = 1
 	while first <= #str do
 		local sent = sock:send(str, first)
-		if sent > 0 then
+		if sent and sent > 0 then
 			first = first + sent;
 		else
 			error('sock:send() returned < 0')
@@ -677,10 +677,20 @@ function handlers.scopes(req)
 end
 
 -------------------------------------------------------------------------------
-local function registerVar(name, value, noQuote)
+local function registerVar(name_, value, noQuote, index)
 	local ty = type(value)
+	local name
+	if type(name_) == 'number' then
+		name = '[' .. name_ .. ']'
+	else
+		name = tostring(name_)
+	end
+	if index then
+		name = name .. ' /' .. index
+	end
+	
 	local item = {
-		name = (type(name) == 'number') and name or tostring(name),
+		name = name,
 		type = ty
 	}
 
@@ -706,8 +716,8 @@ end
 function handlers.variables(req)
 	local varRef = req.arguments.variablesReference
 	local variables = {}
-	local function addVar(name, value, noQuote)
-		variables[#variables + 1] = registerVar(name, value, noQuote) 
+	local function addVar(name, value, noQuote, index)
+		variables[#variables + 1] = registerVar(name, value, noQuote, index) 
 	end
 
 	if (varRef >= 1000000) then
@@ -718,7 +728,7 @@ function handlers.variables(req)
 			for i = 1, 9999 do
 				local name, value = debug.getlocal(depth, i)
 				if name == nil then break end
-				addVar(name, value)
+				addVar(name, value, nil, i)
 			end
 		elseif scopeType == scopeTypes.Upvalues then
 			local info = debug.getinfo(depth, 'f')
@@ -726,7 +736,7 @@ function handlers.variables(req)
 				for i = 1, 9999 do
 					local name, value = debug.getupvalue(info.func, i)
 					if name == nil then break end
-					addVar(name, value)
+					addVar(name, value, nil, i)
 				end
 			end
 		elseif scopeType == scopeTypes.Globals then
@@ -795,6 +805,7 @@ end
 function handlers.next(req)
 	stepTargetHeight = stackHeight() - breaker.stackOffset.step
 	breaker.setLineBreak(step)
+	sendSuccess(req, {})
 	return 'CONTINUE'
 end
 
@@ -802,6 +813,7 @@ end
 function handlers.stepIn(req)
 	stepTargetHeight = nil
 	breaker.setLineBreak(step)
+	sendSuccess(req, {})
 	return 'CONTINUE'
 end
 
@@ -809,6 +821,7 @@ end
 function handlers.stepOut(req)
 	stepTargetHeight = stackHeight() - (breaker.stackOffset.step + 1)
 	breaker.setLineBreak(step)
+	sendSuccess(req, {})
 	return 'CONTINUE'
 end
 
