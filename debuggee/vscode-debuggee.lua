@@ -714,7 +714,6 @@ local scopeTypes = {
 	Locals = 1,
 	Upvalues = 2,
 	Globals = 3,
-	VarArgs = 4, -- hxb
 }
 function handlers.scopes(req)
 	local depth = req.arguments.frameId
@@ -729,7 +728,6 @@ function handlers.scopes(req)
 	end
 
 	addScope('Locals')
-	addScope('VarArgs')
 	addScope('Upvalues')
 	addScope('Globals')
 
@@ -792,14 +790,6 @@ function handlers.variables(req)
 				if name == nil then break end
 				addVar(name, value, nil, i)
 			end
-		-- << hxb
-		elseif scopeType == scopeTypes.VarArgs then
-			for i = 1, 9999 do
-				local name, value = debug.getlocal(depth, -i)
-				if name == nil then break end
-				addVar(name, value, nil, i)
-			end
-		-- >>
 		elseif scopeType == scopeTypes.Upvalues then
 			local info = debug.getinfo(depth, 'f')
 			if info and info.func then
