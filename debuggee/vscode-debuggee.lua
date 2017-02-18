@@ -386,7 +386,7 @@ local function sendMessage(msg)
 			type = 'event',
 			body = {
 				category = 'console',
-				output = '[SENDING] ' .. valueToString(msg)
+				output = '[SENDING] ----\n' .. valueToString(msg) .. '\n----[/SENDING]'
 			}
 		}
 		local dumpBody = json.encode(dumpMsg)
@@ -426,7 +426,7 @@ local function debugLoop()
 					type = 'event',
 					body = {
 						category = 'stderr',
-						output = '[RECEIVED] ' .. valueToString(msg)
+						output = '[RECEIVED] ----\n' .. valueToString(msg) .. '\n----[/RECEIVED]'
 					}
 				})
 			end
