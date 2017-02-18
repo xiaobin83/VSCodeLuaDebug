@@ -189,9 +189,6 @@ setmetatable(coroutineSet, { __mode = 'v' })
 -- 순정 모드 {{{
 local function createHaltBreaker()
 	-- chunkname 매칭 {
-	-- print('createHaltBreaker')
-	-- print('debug.getchunknames = ' .. tostring(debug.getchunknames))
-	-- print('debug.getchunknames() = ' .. valueToString(debug.getchunknames()))
 	local loadedChunkNameMap = {}
 	for chunkname, _ in pairs(debug.getchunknames()) do
 		loadedChunkNameMap[chunkname] = splitChunkName(chunkname)
@@ -272,8 +269,6 @@ local function createHaltBreaker()
 end
 
 local function createPureBreaker()
-	print('createPureBreaker')
-
 	local lineBreakCallback = nil
 	local breakpointsPerPath = {}
 	local chunknameToPathCache = {}
@@ -385,7 +380,7 @@ end
 local function sendMessage(msg)
 	local body = json.encode(msg)
 	sendFully('#' .. #body .. '\n' .. body)
-	print('SENDING:  ' .. valueToString(msg))
+	--print('SENDING:  ' .. valueToString(msg))
 end
 
 -- 리시브는 블럭이 아니어야 할 거 같은데... 음... 블럭이어도 괜찮나?
@@ -411,8 +406,7 @@ local function debugLoop()
 	nextVarRef = 1
 	while true do
 		local msg = recvMessage()
-		--print('RECEIVED: ' .. json.encode(msg))
-		print('RECEIVED: ' .. valueToString(msg))
+		--print('RECEIVED: ' .. valueToString(msg))
 		
 		local fn = handlers[msg.command]
 		if fn then
@@ -679,14 +673,13 @@ function handlers.stackTrace(req)
 	for i = firstFrame, lastFrame do
 		local info = debug.getinfo(i, 'lnS')
 		if (info == nil) then break end
-		print('stack frame: ' .. valueToString(info))
 
 		local src = info.source
 		local prefix = string.sub(src, 1, 1) 
 		if prefix == '@' then
 			src = string.sub(src, 2) -- 앞의 '@' 떼어내기
 		elseif prefix == '=' then
-			src = ''
+			src = '?'
 		end
 
 		local name
