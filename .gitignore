@@ -19,3 +19,4 @@ Extension/*.exe
 *.opendb
 .vs
 .tmp
+*.orig

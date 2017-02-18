@@ -12,11 +12,12 @@ local breaker
 local sendEvent
 
 local onError = nil
+local log = nil
 
 local function defaultOnError(e)
-	print('****************************************************')
-	print(e)
-	print('****************************************************')
+	log('****************************************************\n'
+	.. e .. '\n'
+	.. '****************************************************')
 end
 
 
@@ -297,18 +298,10 @@ local function createPureBreaker()
 		return foundPath
 	end
 
-	local stackOffset = {}
-
 	local entered = false
 	local function hookfunc()
 		if entered then return false end
 		entered = true
-
-		local lineHookHeight = stackHeight()
-		stackOffset.halt = lineHookHeight + 1
-		stackOffset.enterDebugLoop = stackOffset.halt + 1
-		stackOffset.step = lineHookHeight + 1
-		stackOffset.stepDebugLoop = stackOffset.step + 1
 
 		if lineBreakCallback then
 			lineBreakCallback()
@@ -348,15 +341,12 @@ local function createPureBreaker()
 		end,
 
 		-- 실험적으로 알아낸 값들-_-ㅅㅂ
-		stackOffset = stackOffset
---[[
-		{
+		stackOffset = {
 			enterDebugLoop = 6,
 			halt = 7,
 			step = 4,
-			stepDebugLoop = 7
+			stepDebugLoop = 7,
 		}
---]]
 	}
 end
 
@@ -368,7 +358,7 @@ local function sendFully(str)
 	local first = 1
 	while first <= #str do
 		local sent = sock:send(str, first)
-		if sent > 0 then
+		if sent and sent > 0 then
 			first = first + sent;
 		else
 			error('sock:send() returned < 0')
@@ -402,11 +392,12 @@ end
 
 -------------------------------------------------------------------------------
 local function debugLoop()
+	log('debugLoop: ' .. debug.traceback())
 	storedVariables = {}
 	nextVarRef = 1
 	while true do
 		local msg = recvMessage()
-		--print('RECEIVED: ' .. valueToString(msg))
+		log('RECEIVED: ' .. valueToString(msg))
 		
 		local fn = handlers[msg.command]
 		if fn then
@@ -437,6 +428,8 @@ function debuggee.start(jsonLib, config)
 	local controllerPort = config.controllerPort or 56789
 	onError              = config.onError or defaultOnError
 	local redirectPrint  = config.redirectPrint or false
+	-- log                  = config.log or function(msg) print(msg) end
+	log                  = function(msg) end
 
 	local breakerType
 	if debug.sethalt then
@@ -496,7 +489,7 @@ function debuggee.poll()
 		if e == 'timeout' then break end
 
 		local msg = recvMessage()
-		--print('POLL-RECEIVED: ' .. json.encode(msg))
+		log('POLL-RECEIVED: ' .. valueToString(msg))
 		
 		if msg.command == 'pause' then
 			debuggee.enterDebugLoop(1)
@@ -588,7 +581,8 @@ end
 
 -------------------------------------------------------------------------------
 _G.__halt__ = function()
-	baseDepth = breaker.stackOffset.enterDebugLoop
+	log('__halt__ stack trace: ' .. debug.traceback())
+	baseDepth = breaker.stackOffset.halt
 	startDebugLoop()
 end
 
@@ -617,6 +611,8 @@ end
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
+local arrayMt = { __is_luajson_array = true }
+
 function handlers.setBreakpoints(req)
 	local bpLines = {}
 	for _, bp in ipairs(req.arguments.breakpoints) do
@@ -628,6 +624,8 @@ function handlers.setBreakpoints(req)
 		bpLines)
 
 	local breakpoints = {}
+	-- luajson tread empty table {} as object, need to make it array
+	setmetatable(breakpoints, arrayMt)
 	for i, ln in ipairs(bpLines) do
 		breakpoints[i] = {
 			verified = (verifiedLines[ln] ~= nil),
@@ -662,10 +660,14 @@ end
 
 -------------------------------------------------------------------------------
 function handlers.stackTrace(req)
+	log('handlers.stackTrace: ' .. debug.traceback())
+	log('handlers.stackTrace req -> \n' .. valueToString(req))
+
 	assert(req.arguments.threadId == 0)
 
 	local stackFrames = {} 
 	local firstFrame = (req.arguments.startFrame or 0) + baseDepth
+	log('firstFrame = ' .. firstFrame)
 	local lastFrame = (req.arguments.levels and (req.arguments.levels ~= 0))
 		and (firstFrame + req.arguments.levels - 1)
 		or (9999)
@@ -699,6 +701,8 @@ function handlers.stackTrace(req)
 		}
 		stackFrames[#stackFrames + 1] = sframe
 	end
+
+	log('stackFrames: ' .. valueToString(stackFrames))
 
 	sendSuccess(req, {
 		stackFrames = stackFrames
@@ -840,7 +844,7 @@ end
 
 -------------------------------------------------------------------------------
 function handlers.next(req)
-	stepTargetHeight = breaker.stackOffset.step
+	stepTargetHeight = stackHeight() - breaker.stackOffset.step
 	breaker.setLineBreak(step)
 	sendSuccess(req, {})
 	return 'CONTINUE'
@@ -850,6 +854,7 @@ end
 function handlers.stepIn(req)
 	stepTargetHeight = nil
 	breaker.setLineBreak(step)
+	sendSuccess(req, {})
 	return 'CONTINUE'
 end
 
@@ -857,6 +862,7 @@ end
 function handlers.stepOut(req)
 	stepTargetHeight = stackHeight() - (breaker.stackOffset.step + 1)
 	breaker.setLineBreak(step)
+	sendSuccess(req, {})
 	return 'CONTINUE'
 end
 
